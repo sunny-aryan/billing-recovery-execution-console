@@ -25,16 +25,18 @@ The goal is to model what happens when an approved operational decision must bec
 
 ## Current Implementation
 
-The current implementation includes deterministic policy evaluation for billing corrections.
+The current implementation supports:
 
-Policy outcomes include:
+- seeded billing correction cases
+- billing work queue
+- case detail view
+- deterministic policy evaluation
+- persisted policy outcomes
+- human approval and rejection capture
+- role-aware approval validation
+- approval rationale capture
 
-- eligible for approval
-- requires manager approval
-- needs more review
-- blocked
-
-Policy evaluation is persisted in SQLite and updates the case lifecycle before approval or execution can happen.
+Policy evaluation must happen before approval. Approval must happen before future execution requests.
 
 
 ## Target Users

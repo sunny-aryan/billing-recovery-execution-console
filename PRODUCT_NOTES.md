@@ -72,6 +72,33 @@ billing case
 → future execution workflow
 ```
 
+## Commit 4 Product Decision: Approval as a Durable Workflow Object
+
+Commit 4 adds persisted human approval decisions.
+
+This is important because approval is not just a UI interaction. For a money-impacting workflow, approval needs to be a durable object that captures:
+
+- approver identity
+- approver role
+- decision
+- approved action
+- approved amount
+- rationale
+- policy evaluation used at decision time
+
+This prepares the system for execution requests in the next commit.
+
+## Commit 4 Workflow Progression
+
+The product now supports:
+
+```text
+billing case
+→ deterministic policy evaluation
+→ human approval or rejection
+→ future execution request
+```
+
 ## Why Billing Recovery?
 
 Billing corrections are a strong domain for this project because they involve:

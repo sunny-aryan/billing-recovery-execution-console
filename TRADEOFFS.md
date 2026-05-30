@@ -75,3 +75,37 @@ For this project, approval should not be the first control. Policy evaluation sh
 ### Product Principle Reinforced
 
 AI can assist with context, but deterministic systems must govern money-impacting workflow eligibility.
+
+## Commit 4: Persist human approval before execution
+
+### Decision
+
+The project adds a persisted human approval workflow before introducing execution requests or provider writes.
+
+### Why
+
+Reliable execution should not begin from a UI button alone. It should begin from a durable human decision that records:
+
+- who approved
+- what role they had
+- what policy evaluation was used
+- what action was approved
+- what amount was approved
+- why the decision was made
+
+This creates a clear control point before future money-impacting execution.
+
+### Alternative Considered
+
+Move directly from policy evaluation to execution request creation.
+
+### Why Rejected
+
+That would weaken the product’s governance model.
+
+For this project, execution must be downstream of both deterministic policy evaluation and explicit human approval.
+
+### Product Principle Reinforced
+
+Do not execute what has not been approved.  
+Do not approve what policy has not evaluated.

@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.cases.case_service import format_amount
+from src.ui.approval_panel import render_approval_panel
 from src.ui.policy_panel import render_policy_panel
 
 
@@ -73,11 +74,15 @@ def render_case_detail(case):
 
     st.divider()
 
+    render_approval_panel(case)
+
+    st.divider()
+
     st.subheader("Current Workflow Status")
 
     st.info(
-        "This case now supports deterministic policy evaluation. "
-        "Approval, execution, retry, reconciliation, and manual recovery workflows "
+        "This case now supports deterministic policy evaluation and human approval capture. "
+        "Execution requests, idempotency, retries, reconciliation, and manual recovery "
         "will be added in future commits."
     )
 
@@ -86,14 +91,14 @@ def render_case_detail(case):
     future_col_1, future_col_2, future_col_3 = st.columns(3)
 
     with future_col_1:
-        st.button("Approve correction", disabled=True)
+        st.button("Create execution request", disabled=True)
 
     with future_col_2:
-        st.button("Create execution request", disabled=True)
+        st.button("Retry failed execution", disabled=True)
 
     with future_col_3:
         st.button("Run reconciliation", disabled=True)
 
     st.caption(
-        "Disabled controls are intentional placeholders for the upcoming approval and execution lifecycle."
+        "Disabled controls are intentional placeholders for the upcoming reliable execution lifecycle."
     )

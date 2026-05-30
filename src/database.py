@@ -21,7 +21,8 @@ def initialize_database():
     Create required database tables if they do not already exist.
 
     Commit 1 created the billing_cases table.
-    Commit 3 adds the policy_evaluations table.
+    Commit 3 added the policy_evaluations table.
+    Commit 4 adds the approvals table.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -59,6 +60,25 @@ def initialize_database():
             rules_triggered_json TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (case_id) REFERENCES billing_cases(case_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS approvals (
+            approval_id TEXT PRIMARY KEY,
+            case_id TEXT NOT NULL,
+            policy_evaluation_id TEXT NOT NULL,
+            approver_name TEXT NOT NULL,
+            approver_role TEXT NOT NULL,
+            decision TEXT NOT NULL,
+            approved_action TEXT NOT NULL,
+            approved_amount_cents INTEGER NOT NULL,
+            rationale TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (case_id) REFERENCES billing_cases(case_id),
+            FOREIGN KEY (policy_evaluation_id) REFERENCES policy_evaluations(evaluation_id)
         )
         """
     )
