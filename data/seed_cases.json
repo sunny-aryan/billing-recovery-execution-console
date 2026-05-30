@@ -1,0 +1,80 @@
+[
+  {
+    "case_id": "CASE-1001",
+    "customer_name": "Northstar Analytics GmbH",
+    "customer_id": "CUS-001",
+    "invoice_id": "INV-2026-001",
+    "issue_type": "duplicate_charge",
+    "amount_cents": 12000,
+    "currency": "EUR",
+    "priority": "high",
+    "status": "new",
+    "evidence_summary": "Customer reports being charged twice for the April subscription renewal.",
+    "proposed_correction": "Refund one duplicate payment after verifying provider transaction history."
+  },
+  {
+    "case_id": "CASE-1002",
+    "customer_name": "BlueOrbit Logistics",
+    "customer_id": "CUS-002",
+    "invoice_id": "INV-2026-002",
+    "issue_type": "wrong_plan_price",
+    "amount_cents": 45000,
+    "currency": "EUR",
+    "priority": "high",
+    "status": "under_review",
+    "evidence_summary": "Customer was charged Enterprise plan pricing despite contract showing Pro plan for current billing period.",
+    "proposed_correction": "Issue a partial billing credit for the price difference."
+  },
+  {
+    "case_id": "CASE-1003",
+    "customer_name": "HelioGrid Energy",
+    "customer_id": "CUS-003",
+    "invoice_id": "INV-2026-003",
+    "issue_type": "discount_not_applied",
+    "amount_cents": 7500,
+    "currency": "EUR",
+    "priority": "medium",
+    "status": "pending_approval",
+    "evidence_summary": "Annual contract includes a 10% discount, but the latest invoice was generated without discount.",
+    "proposed_correction": "Apply a credit for the missing discount amount."
+  },
+  {
+    "case_id": "CASE-1004",
+    "customer_name": "Acme Health Systems",
+    "customer_id": "CUS-004",
+    "invoice_id": "INV-2026-004",
+    "issue_type": "goodwill_credit",
+    "amount_cents": 3000,
+    "currency": "EUR",
+    "priority": "low",
+    "status": "new",
+    "evidence_summary": "Customer experienced delayed onboarding and requested a small goodwill credit.",
+    "proposed_correction": "Offer a one-time goodwill credit subject to manager approval."
+  },
+  {
+    "case_id": "CASE-1005",
+    "customer_name": "UrbanCart Marketplace",
+    "customer_id": "CUS-005",
+    "invoice_id": "INV-2026-005",
+    "issue_type": "possible_duplicate_correction",
+    "amount_cents": 6000,
+    "currency": "EUR",
+    "priority": "medium",
+    "status": "under_review",
+    "evidence_summary": "Customer requests refund, but invoice notes indicate a prior manual credit may already have been issued.",
+    "proposed_correction": "Investigate previous credit before creating any execution request."
+  },
+  {
+    "case_id": "CASE-1006",
+    "customer_name": "Nordic Mobility Group",
+    "customer_id": "CUS-006",
+    "invoice_id": "INV-2026-006",
+    "issue_type": "currency_mismatch",
+    "amount_cents": 15000,
+    "currency": "USD",
+    "priority": "high",
+    "status": "new",
+    "evidence_summary": "Customer was invoiced in USD while contract and billing profile indicate EUR.",
+    "proposed_correction": "Hold automated correction until currency mismatch is reviewed."
+  }
+]

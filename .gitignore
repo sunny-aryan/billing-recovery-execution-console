@@ -1,0 +1,37 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment variables
+.env
+.env.local
+
+# Local SQLite database
+billing_recovery.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Streamlit local config
+.streamlit/
+
+# macOS files
+.DS_Store
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# Test/cache artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
