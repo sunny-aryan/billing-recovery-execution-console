@@ -1,8 +1,5 @@
 """
-Execution constants for billing correction execution requests.
-
-Commit 5 introduces durable execution requests, but does not yet call
-external providers. Provider execution will be added in a later commit.
+Execution constants for billing correction execution requests and attempts.
 """
 
 # Execution request statuses.
@@ -46,5 +43,32 @@ SUPPORTED_OPERATION_TYPES = [
     HOLD_FOR_MANUAL_REVIEW,
 ]
 
-# Case status after an execution request is created.
+# Mock provider outcomes.
+MOCK_SUCCESS = "success"
+MOCK_TRANSIENT_FAILURE = "transient_failure"
+MOCK_PERMANENT_FAILURE = "permanent_failure"
+MOCK_TIMEOUT = "timeout"
+
+MOCK_PROVIDER_OUTCOMES = [
+    MOCK_SUCCESS,
+    MOCK_TRANSIENT_FAILURE,
+    MOCK_PERMANENT_FAILURE,
+    MOCK_TIMEOUT,
+]
+
+# Provider statuses.
+PROVIDER_SUCCEEDED = "succeeded"
+PROVIDER_FAILED = "failed"
+PROVIDER_TIMEOUT = "timeout"
+
+# Error types.
+ERROR_TRANSIENT = "transient"
+ERROR_PERMANENT = "permanent"
+ERROR_UNKNOWN = "unknown"
+
+# Case statuses after execution.
 CASE_STATUS_EXECUTION_PENDING = "execution_pending"
+CASE_STATUS_PROCESSING = "processing"
+CASE_STATUS_SUCCEEDED = "succeeded"
+CASE_STATUS_FAILED = "failed"
+CASE_STATUS_NEEDS_MANUAL_REVIEW = "needs_manual_review"

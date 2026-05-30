@@ -147,3 +147,36 @@ Real execution systems need durable intermediate state so failures can be retrie
 Human approval authorizes execution.  
 Execution requests make that authorization durable.  
 Provider attempts should be separate, retryable, and auditable.
+
+## Commit 6: Use a mock provider before real Stripe execution
+
+### Decision
+
+The project adds mock provider execution before adding Stripe test-mode execution.
+
+### Why
+
+The goal of this stage is to model execution behavior, state transitions, and attempt tracking without being blocked by external provider setup.
+
+A mock provider also allows deterministic demonstration of failure modes that are hard to force reliably with real APIs:
+
+- success
+- transient failure
+- permanent failure
+- timeout
+- unknown provider state
+
+### Alternative Considered
+
+Integrate Stripe immediately.
+
+### Why Rejected
+
+Starting with Stripe would make the project look like an API integration demo and would make controlled failure testing harder.
+
+The stronger product signal is to first model provider execution as an adapter boundary, then add a real provider behind that boundary later.
+
+### Product Principle Reinforced
+
+Provider execution should be isolated behind an adapter.  
+The internal execution lifecycle should not depend on one provider’s API shape.

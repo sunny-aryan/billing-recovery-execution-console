@@ -87,23 +87,20 @@ def render_case_detail(case):
 
     st.info(
         "This case now supports deterministic policy evaluation, human approval capture, "
-        "and durable execution request creation with idempotency keys. Provider execution, "
-        "attempt tracking, retries, reconciliation, and manual recovery will be added in future commits."
+        "durable execution request creation, mock provider execution, and execution attempt tracking. "
+        "Retries, reconciliation, and manual recovery will be added in future commits."
     )
 
-    st.subheader("Future Execution Controls")
+    st.subheader("Future Recovery Controls")
 
-    future_col_1, future_col_2, future_col_3 = st.columns(3)
+    future_col_1, future_col_2 = st.columns(2)
 
     with future_col_1:
-        st.button("Execute with provider", disabled=True)
-
-    with future_col_2:
         st.button("Retry failed execution", disabled=True)
 
-    with future_col_3:
+    with future_col_2:
         st.button("Run reconciliation", disabled=True)
 
     st.caption(
-        "Disabled controls are intentional placeholders for the upcoming reliable execution lifecycle."
+        "Disabled controls are intentional placeholders for the upcoming retry and reconciliation lifecycle."
     )

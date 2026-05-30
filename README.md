@@ -38,6 +38,10 @@ The current implementation supports:
 - durable execution request creation
 - deterministic idempotency key generation
 - duplicate execution request prevention
+- mock provider execution
+- execution attempt tracking
+- provider success, transient failure, permanent failure, and timeout simulation
+- execution status transitions after provider response
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -112,14 +116,11 @@ python3 -m streamlit run app.py
 
 The current version does not yet include:
 
-* approval capture
-* execution request creation
-* external provider writes
-* idempotency
-* retry logic
-* reconciliation
-* audit logging
-* manual recovery paths
+- retry logic
+- reconciliation
+- audit logging
+- manual recovery paths
+- real Stripe test-mode execution
 
 These are planned for upcoming commits.
 

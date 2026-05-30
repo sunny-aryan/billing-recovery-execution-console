@@ -126,7 +126,39 @@ billing case
 → future provider execution
 ```
 
-The key product boundary is: Approval authorizes the correction. The execution request turns that authorization into a durable system command. Provider execution remains a separate step.
+The key product boundary is: 
+
+> Approval authorizes the correction. The execution request turns that authorization into a durable system command. Provider execution remains a separate step.
+
+## Commit 6 Product Decision: Attempt Tracking Before Retry
+
+Commit 6 adds mock provider execution and execution attempt tracking.
+
+This is intentionally added before retry logic because the system first needs a durable record of each provider call attempt.
+
+The workflow now separates:
+
+- execution request
+- execution attempt
+- provider response
+- execution status update
+
+This prepares the system for retry and reconciliation in later commits.
+
+## Commit 6 Workflow Progression
+
+The product now supports:
+
+billing case  
+→ deterministic policy evaluation  
+→ human approval  
+→ durable execution request  
+→ mock provider execution attempt  
+→ succeeded / failed_transient / failed_permanent / needs_manual_review
+
+The key product boundary is:
+
+> Execution requests define what should happen. Execution attempts record what actually happened when the provider was called.
 
 ## Why Billing Recovery?
 

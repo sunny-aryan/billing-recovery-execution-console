@@ -3,15 +3,21 @@ import streamlit as st
 from src.approvals.approval_rules import APPROVED
 from src.approvals.approval_service import get_latest_approval
 from src.cases.case_service import format_amount
+from src.execution.execution_rules import (
+    EXECUTION_PENDING,
+    MOCK_PROVIDER_OUTCOMES,
+)
 from src.execution.execution_service import (
     create_execution_request,
+    execute_with_mock_provider,
+    get_execution_attempts,
     get_latest_execution_request,
 )
 
 
 def render_execution_request_panel(case):
     """
-    Render execution request creation and current execution request state.
+    Render execution request creation, provider execution, and attempt history.
 
     Args:
         case (dict): Billing case record.
@@ -20,14 +26,15 @@ def render_execution_request_panel(case):
 
     st.caption(
         "An execution request turns a human-approved billing correction into a durable "
-        "system command. This commit creates the request and idempotency key, but does "
-        "not call an external provider yet."
+        "system command. Mock provider execution now records attempts and provider outcomes."
     )
 
     latest_request = get_latest_execution_request(case["case_id"])
 
     if latest_request is not None:
         _render_execution_request(latest_request)
+        _render_provider_execution_controls(latest_request)
+        _render_execution_attempts(latest_request)
         return
 
     latest_approval = get_latest_approval(case["case_id"])
@@ -108,7 +115,7 @@ def _render_execution_request(execution_request):
         st.code(execution_request["provider_object_id"])
     else:
         st.caption(
-            "No provider object exists yet because provider execution has not been added."
+            "No provider object exists yet because provider execution has not succeeded."
         )
 
     if "created_at" in execution_request:
@@ -117,3 +124,102 @@ def _render_execution_request(execution_request):
     st.caption(
         "Duplicate prevention active: this approval already has a durable execution request."
     )
+
+
+def _render_provider_execution_controls(execution_request):
+    """
+    Render mock provider execution controls.
+
+    Args:
+        execution_request (dict): Execution request record.
+    """
+    st.subheader("Provider Execution")
+
+    if execution_request["status"] != EXECUTION_PENDING:
+        st.info(
+            f"Provider execution is not available because the request is currently in status: {execution_request['status']}."
+        )
+        return
+
+    st.caption(
+        "Select a mock provider outcome to simulate the external billing provider response."
+    )
+
+    simulated_outcome = st.selectbox(
+        "Mock provider outcome",
+        options=MOCK_PROVIDER_OUTCOMES,
+        key=f"mock_outcome_{execution_request['execution_request_id']}",
+    )
+
+    if st.button(
+        "Execute with mock provider",
+        key=f"execute_mock_provider_{execution_request['execution_request_id']}",
+    ):
+        try:
+            updated_request = execute_with_mock_provider(
+                execution_request_id=execution_request["execution_request_id"],
+                simulated_outcome=simulated_outcome,
+            )
+
+            st.success("Provider execution attempt completed.")
+            _render_execution_request(updated_request)
+
+            st.caption(
+                "Refresh or reopen the case to see the updated lifecycle status in the case header."
+            )
+
+        except ValueError as error:
+            st.error(str(error))
+
+
+def _render_execution_attempts(execution_request):
+    """
+    Render execution attempt history.
+
+    Args:
+        execution_request (dict): Execution request record.
+    """
+    st.subheader("Execution Attempts")
+
+    attempts = get_execution_attempts(execution_request["execution_request_id"])
+
+    if not attempts:
+        st.info("No execution attempts have been recorded yet.")
+        return
+
+    for attempt in attempts:
+        with st.expander(
+            f"Attempt {attempt['attempt_number']} · {attempt['provider_status']}",
+            expanded=False,
+        ):
+            st.write("**Attempt ID**")
+            st.code(attempt["attempt_id"])
+
+            st.write("**Provider**")
+            st.write(attempt["provider"])
+
+            st.write("**Provider Status**")
+            st.write(attempt["provider_status"])
+
+            if attempt["error_type"]:
+                st.write("**Error Type**")
+                st.write(attempt["error_type"])
+
+            if attempt["error_code"]:
+                st.write("**Error Code**")
+                st.code(attempt["error_code"])
+
+            if attempt["error_message"]:
+                st.write("**Error Message**")
+                st.write(attempt["error_message"])
+
+            st.write("**Request Payload**")
+            st.json(attempt["request_payload"])
+
+            st.write("**Response Payload**")
+            st.json(attempt["response_payload"])
+
+            st.caption(f"Started at: {attempt['started_at']}")
+
+            if attempt["finished_at"]:
+                st.caption(f"Finished at: {attempt['finished_at']}")
