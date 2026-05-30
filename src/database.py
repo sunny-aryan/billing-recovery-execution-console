@@ -25,7 +25,8 @@ def initialize_database():
     Commit 4 added the approvals table.
     Commit 5 added the execution_requests table.
     Commit 6 added the execution_attempts table.
-    Commit 8 adds the reconciliation_runs table.
+    Commit 8 added the reconciliation_runs table.
+    Commit 9 adds the manual_recovery_actions table.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -138,6 +139,23 @@ def initialize_database():
             result TEXT NOT NULL,
             mismatch_reason TEXT,
             action_taken TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (execution_request_id) REFERENCES execution_requests(execution_request_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS manual_recovery_actions (
+            manual_recovery_id TEXT PRIMARY KEY,
+            execution_request_id TEXT NOT NULL,
+            action_type TEXT NOT NULL,
+            operator_name TEXT NOT NULL,
+            rationale TEXT NOT NULL,
+            provider_reference_id TEXT,
+            previous_execution_status TEXT NOT NULL,
+            new_execution_status TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (execution_request_id) REFERENCES execution_requests(execution_request_id)
         )

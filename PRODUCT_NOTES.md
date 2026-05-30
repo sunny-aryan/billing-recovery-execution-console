@@ -227,6 +227,39 @@ The key product boundary is:
 
 > Internal status is not enough. Reliable execution requires source-of-truth verification.
 
+## Commit 9 Product Decision: Manual Recovery as a Governed Workflow
+
+Commit 9 adds manual recovery for unresolved execution states.
+
+This is important because some execution failures cannot be safely retried or automatically reconciled. In those cases, the system needs a controlled operator path.
+
+Manual recovery captures:
+
+- operator name
+- recovery action
+- rationale
+- optional provider reference
+- previous execution status
+- new execution status
+
+## Commit 9 Workflow Progression
+
+The product now supports:
+
+billing case  
+→ deterministic policy evaluation  
+→ human approval  
+→ durable execution request  
+→ mock provider execution attempt  
+→ retry if transient  
+→ reconciliation against provider source of truth  
+→ manual recovery if unresolved  
+→ manually resolved / cancelled / reopened
+
+The key product boundary is:
+
+> Human intervention is allowed, but it must be explicit, reasoned, and recorded.
+
 ## Why Billing Recovery?
 
 Billing corrections are a strong domain for this project because they involve:

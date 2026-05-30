@@ -238,6 +238,57 @@ def mark_execution_reconciled(execution_request_id):
         CASE_STATUS_RECONCILED,
     )
 
+def update_execution_request_status(execution_request_id, status):
+    """
+    Public helper to update execution request status.
+
+    Args:
+        execution_request_id (str): Execution request identifier.
+        status (str): New execution status.
+    """
+    execution_request = get_execution_request_by_id(execution_request_id)
+
+    if execution_request is None:
+        raise ValueError("Execution request not found.")
+
+    _update_execution_request_status(
+        execution_request_id=execution_request_id,
+        status=status,
+    )
+
+
+def attach_provider_reference(execution_request_id, provider_object_id):
+    """
+    Attach a provider reference ID to an execution request.
+
+    Used when an operator manually verifies an external provider object.
+
+    Args:
+        execution_request_id (str): Execution request identifier.
+        provider_object_id (str): External provider object/reference ID.
+    """
+    execution_request = get_execution_request_by_id(execution_request_id)
+
+    if execution_request is None:
+        raise ValueError("Execution request not found.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE execution_requests
+        SET
+            provider_object_id = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE execution_request_id = ?
+        """,
+        (provider_object_id, execution_request_id),
+    )
+
+    conn.commit()
+    conn.close()
+
 
 def get_latest_execution_request(case_id):
     """

@@ -53,6 +53,12 @@ The current implementation supports:
 - matched failure detection
 - mismatch detection
 - routing unsafe mismatches to manual review
+- manual recovery workflow for unresolved executions
+- operator recovery action capture
+- recovery rationale capture
+- provider reference attachment
+- manual recovery history
+- state transitions to manually resolved, cancelled, or reopened
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -127,13 +133,11 @@ python3 -m streamlit run app.py
 
 The current version does not yet include:
 
-The current version does not yet include:
-
-- full manual recovery workflow
-- audit logging
+- centralized audit logging across all workflow events
 - real Stripe test-mode execution
 - background scheduled retries
 - provider webhooks
+- production-grade permissions
 
 These are planned for upcoming commits.
 

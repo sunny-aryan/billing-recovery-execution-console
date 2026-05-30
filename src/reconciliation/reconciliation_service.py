@@ -33,6 +33,7 @@ from src.execution.execution_rules import (
 from src.execution.execution_service import (
     get_execution_request_by_id,
     mark_execution_reconciled,
+    update_execution_request_status,
 )
 from src.providers.mock_billing_adapter import lookup_provider_state
 
@@ -228,6 +229,10 @@ def _apply_reconciliation_action(execution_request, action_taken):
         return
 
     if action_taken == RECON_ACTION_ROUTE_MANUAL_REVIEW:
+        update_execution_request_status(
+            execution_request["execution_request_id"],
+            NEEDS_MANUAL_REVIEW,
+        )
         update_case_status(
             execution_request["case_id"],
             CASE_STATUS_NEEDS_MANUAL_REVIEW,

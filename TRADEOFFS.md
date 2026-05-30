@@ -234,3 +234,37 @@ In real execution systems, operators need to know whether the provider actually 
 
 Execution is not complete when the provider call returns.  
 Execution is complete when internal state and provider source of truth are reconciled.
+
+## Commit 9: Manual recovery after reconciliation
+
+### Decision
+
+The project adds manual recovery after reconciliation, rather than immediately after provider failure.
+
+### Why
+
+Manual recovery should be based on a clear understanding of the execution state.
+
+By placing reconciliation before manual recovery, the system can distinguish between:
+
+- confirmed provider success
+- confirmed provider non-execution
+- unknown provider state
+- internal/provider mismatch
+
+Operators can then record a recovery action with rationale.
+
+### Alternative Considered
+
+Allow manual recovery directly after any provider failure.
+
+### Why Rejected
+
+That would make recovery less disciplined.
+
+In a reliable execution system, operators should first understand whether the external provider actually performed the action before deciding how to recover.
+
+### Product Principle Reinforced
+
+Manual recovery is not a shortcut around system controls.  
+It is a governed path for cases automation cannot safely resolve.

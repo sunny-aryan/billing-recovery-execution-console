@@ -1,5 +1,6 @@
 """
-Execution constants for billing correction execution requests, attempts, retries, and reconciliation.
+Execution constants for billing correction execution requests, attempts, retries,
+reconciliation, and manual recovery.
 """
 
 # Execution request statuses.
@@ -11,6 +12,7 @@ FAILED_TRANSIENT = "failed_transient"
 FAILED_PERMANENT = "failed_permanent"
 NEEDS_MANUAL_REVIEW = "needs_manual_review"
 RECONCILED = "reconciled"
+MANUALLY_RESOLVED = "manually_resolved"
 CANCELLED = "cancelled"
 
 EXECUTION_REQUEST_STATUSES = [
@@ -22,6 +24,7 @@ EXECUTION_REQUEST_STATUSES = [
     FAILED_PERMANENT,
     NEEDS_MANUAL_REVIEW,
     RECONCILED,
+    MANUALLY_RESOLVED,
     CANCELLED,
 ]
 
@@ -82,6 +85,7 @@ RETRY_BLOCKED_STATUSES = [
     FAILED_PERMANENT,
     NEEDS_MANUAL_REVIEW,
     RECONCILED,
+    MANUALLY_RESOLVED,
     CANCELLED,
 ]
 
@@ -98,7 +102,26 @@ RECON_ACTION_MARK_RECONCILED = "mark_reconciled"
 RECON_ACTION_ROUTE_MANUAL_REVIEW = "route_manual_review"
 RECON_ACTION_NO_CHANGE = "no_change"
 
-# Case statuses after execution/reconciliation.
+# Manual recovery actions.
+MANUAL_ACTION_MARK_RESOLVED = "mark_manually_resolved"
+MANUAL_ACTION_CANCEL_EXECUTION = "cancel_execution"
+MANUAL_ACTION_ATTACH_PROVIDER_REFERENCE = "attach_provider_reference"
+MANUAL_ACTION_REOPEN_FOR_INVESTIGATION = "reopen_for_investigation"
+
+MANUAL_RECOVERY_ACTIONS = [
+    MANUAL_ACTION_MARK_RESOLVED,
+    MANUAL_ACTION_CANCEL_EXECUTION,
+    MANUAL_ACTION_ATTACH_PROVIDER_REFERENCE,
+    MANUAL_ACTION_REOPEN_FOR_INVESTIGATION,
+]
+
+MANUAL_RECOVERY_ELIGIBLE_STATUSES = [
+    FAILED_TRANSIENT,
+    FAILED_PERMANENT,
+    NEEDS_MANUAL_REVIEW,
+]
+
+# Case statuses after execution/reconciliation/manual recovery.
 CASE_STATUS_EXECUTION_PENDING = "execution_pending"
 CASE_STATUS_PROCESSING = "processing"
 CASE_STATUS_RETRYING = "retrying"
@@ -106,3 +129,6 @@ CASE_STATUS_SUCCEEDED = "succeeded"
 CASE_STATUS_FAILED = "failed"
 CASE_STATUS_NEEDS_MANUAL_REVIEW = "needs_manual_review"
 CASE_STATUS_RECONCILED = "reconciled"
+CASE_STATUS_MANUALLY_RESOLVED = "manually_resolved"
+CASE_STATUS_CANCELLED = "cancelled"
+CASE_STATUS_UNDER_REVIEW = "under_review"
