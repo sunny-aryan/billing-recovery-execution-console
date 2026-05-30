@@ -160,6 +160,42 @@ The key product boundary is:
 
 > Execution requests define what should happen. Execution attempts record what actually happened when the provider was called.
 
+## Commit 7 Product Decision: Retry Only Transient Failures
+
+Commit 7 adds retry handling for transient execution failures.
+
+This is important because execution failures should not all be treated the same:
+
+- transient failures may be retried
+- permanent failures should not be retried automatically
+- unknown provider states should move toward reconciliation or manual review
+- successful executions should never be retried
+
+The workflow now separates:
+
+- first provider attempt
+- transient failure classification
+- retry eligibility
+- retry attempt
+- max retry handling
+
+## Commit 7 Workflow Progression
+
+The product now supports:
+
+billing case  
+→ deterministic policy evaluation  
+→ human approval  
+→ durable execution request  
+→ mock provider execution attempt  
+→ transient failure  
+→ retry attempt  
+→ succeeded / failed_transient / failed_permanent / needs_manual_review
+
+The key product boundary is:
+
+> Retry is governed by deterministic policy. It is not a generic repeat button.
+
 ## Why Billing Recovery?
 
 Billing corrections are a strong domain for this project because they involve:

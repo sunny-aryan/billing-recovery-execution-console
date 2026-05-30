@@ -83,7 +83,7 @@ def render_approval_panel(case):
 
     if submitted:
         try:
-            approval = create_approval_decision(
+            create_approval_decision(
                 case_id=case["case_id"],
                 approver_name=approver_name,
                 approver_role=approver_role,
@@ -94,11 +94,7 @@ def render_approval_panel(case):
             )
 
             st.success("Approval decision saved.")
-            _render_latest_approval(approval, case["currency"])
-
-            st.caption(
-                "Refresh or reopen the case to see the updated lifecycle status in the case header."
-            )
+            st.rerun()
 
         except ValueError as error:
             st.error(str(error))

@@ -2,12 +2,14 @@
 Execution service.
 
 Commit 5 created durable execution requests after human approval.
-Commit 6 adds mock provider execution attempts and attempt tracking.
+Commit 6 added mock provider execution attempts and attempt tracking.
+Commit 7 adds retry handling for transient failures.
 
 This separates:
 - approval
 - execution request creation
 - provider execution attempt
+- retry eligibility
 - provider response handling
 """
 
@@ -23,6 +25,7 @@ from src.execution.execution_rules import (
     CASE_STATUS_FAILED,
     CASE_STATUS_NEEDS_MANUAL_REVIEW,
     CASE_STATUS_PROCESSING,
+    CASE_STATUS_RETRYING,
     CASE_STATUS_SUCCEEDED,
     ERROR_PERMANENT,
     ERROR_TRANSIENT,
@@ -30,15 +33,18 @@ from src.execution.execution_rules import (
     EXECUTION_PENDING,
     FAILED_PERMANENT,
     FAILED_TRANSIENT,
+    MAX_RETRY_ATTEMPTS,
     MOCK_BILLING_PROVIDER,
     NEEDS_MANUAL_REVIEW,
     PROCESSING,
     PROVIDER_FAILED,
     PROVIDER_SUCCEEDED,
     PROVIDER_TIMEOUT,
+    RETRYING,
     SUCCEEDED,
 )
 from src.execution.idempotency import generate_idempotency_key
+from src.execution.retry_policy import evaluate_retry_eligibility
 from src.providers.mock_billing_adapter import execute_billing_operation
 
 
@@ -149,52 +155,64 @@ def execute_with_mock_provider(execution_request_id, simulated_outcome):
             f"Execution request is not executable from status {execution_request['status']}."
         )
 
-    _update_execution_request_status(
-        execution_request_id=execution_request_id,
-        status=PROCESSING,
-    )
-    update_case_status(execution_request["case_id"], CASE_STATUS_PROCESSING)
-
-    execution_request = get_execution_request_by_id(execution_request_id)
-    attempt_number = _get_next_attempt_number(execution_request_id)
-    attempt_id = f"ATT-{uuid.uuid4().hex[:8].upper()}"
-
-    request_payload = {
-        "execution_request_id": execution_request["execution_request_id"],
-        "operation_type": execution_request["operation_type"],
-        "amount_cents": execution_request["approved_amount_cents"],
-        "currency": execution_request["currency"],
-        "idempotency_key": execution_request["idempotency_key"],
-        "provider": execution_request["provider"],
-        "simulated_outcome": simulated_outcome,
-    }
-
-    provider_response = execute_billing_operation(
+    return _run_provider_attempt(
         execution_request=execution_request,
         simulated_outcome=simulated_outcome,
+        in_progress_status=PROCESSING,
+        in_progress_case_status=CASE_STATUS_PROCESSING,
     )
 
-    final_status = _map_provider_response_to_execution_status(provider_response)
-    final_case_status = _map_execution_status_to_case_status(final_status)
 
-    _store_execution_attempt(
-        attempt_id=attempt_id,
-        execution_request_id=execution_request_id,
-        attempt_number=attempt_number,
-        provider=execution_request["provider"],
-        request_payload=request_payload,
-        provider_response=provider_response,
+def retry_with_mock_provider(execution_request_id, simulated_outcome):
+    """
+    Retry a transiently failed execution request with the mock billing provider.
+
+    Args:
+        execution_request_id (str): Execution request identifier.
+        simulated_outcome (str): Controlled mock provider outcome.
+
+    Returns:
+        dict: Updated execution request.
+
+    Raises:
+        ValueError: If the execution request is missing or not retryable.
+    """
+    execution_request = get_execution_request_by_id(execution_request_id)
+
+    if execution_request is None:
+        raise ValueError("Execution request not found.")
+
+    attempt_count = get_execution_attempt_count(execution_request_id)
+    retry_eligibility = evaluate_retry_eligibility(execution_request, attempt_count)
+
+    if not retry_eligibility["is_retryable"]:
+        raise ValueError(retry_eligibility["reason"])
+
+    updated_request = _run_provider_attempt(
+        execution_request=execution_request,
+        simulated_outcome=simulated_outcome,
+        in_progress_status=RETRYING,
+        in_progress_case_status=CASE_STATUS_RETRYING,
     )
 
-    _update_execution_request_status(
-        execution_request_id=execution_request_id,
-        status=final_status,
-        provider_object_id=provider_response["provider_object_id"],
-    )
+    refreshed_request = get_execution_request_by_id(execution_request_id)
+    refreshed_attempt_count = get_execution_attempt_count(execution_request_id)
 
-    update_case_status(execution_request["case_id"], final_case_status)
+    if (
+        refreshed_request["status"] == FAILED_TRANSIENT
+        and refreshed_attempt_count >= MAX_RETRY_ATTEMPTS
+    ):
+        _update_execution_request_status(
+            execution_request_id=execution_request_id,
+            status=NEEDS_MANUAL_REVIEW,
+        )
+        update_case_status(
+            refreshed_request["case_id"],
+            CASE_STATUS_NEEDS_MANUAL_REVIEW,
+        )
+        return get_execution_request_by_id(execution_request_id)
 
-    return get_execution_request_by_id(execution_request_id)
+    return updated_request
 
 
 def get_latest_execution_request(case_id):
@@ -379,9 +397,15 @@ def get_execution_attempts(execution_request_id):
     return attempts
 
 
-def _get_next_attempt_number(execution_request_id):
+def get_execution_attempt_count(execution_request_id):
     """
-    Calculate the next attempt number for an execution request.
+    Count execution attempts for an execution request.
+
+    Args:
+        execution_request_id (str): Execution request identifier.
+
+    Returns:
+        int: Number of attempts recorded.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -398,7 +422,100 @@ def _get_next_attempt_number(execution_request_id):
     attempt_count = cursor.fetchone()["attempt_count"]
     conn.close()
 
-    return int(attempt_count) + 1
+    return int(attempt_count)
+
+
+def get_retry_eligibility(execution_request_id):
+    """
+    Get retry eligibility for an execution request.
+
+    Args:
+        execution_request_id (str): Execution request identifier.
+
+    Returns:
+        dict: Retry eligibility result.
+    """
+    execution_request = get_execution_request_by_id(execution_request_id)
+
+    if execution_request is None:
+        return {
+            "is_retryable": False,
+            "reason": "Execution request not found.",
+            "attempts_remaining": 0,
+        }
+
+    attempt_count = get_execution_attempt_count(execution_request_id)
+
+    return evaluate_retry_eligibility(execution_request, attempt_count)
+
+
+def _run_provider_attempt(
+    execution_request,
+    simulated_outcome,
+    in_progress_status,
+    in_progress_case_status,
+):
+    """
+    Run one provider attempt and update execution state from provider response.
+
+    Args:
+        execution_request (dict): Execution request record.
+        simulated_outcome (str): Controlled mock provider outcome.
+        in_progress_status (str): Status while attempt is in progress.
+        in_progress_case_status (str): Case status while attempt is in progress.
+
+    Returns:
+        dict: Updated execution request.
+    """
+    execution_request_id = execution_request["execution_request_id"]
+
+    _update_execution_request_status(
+        execution_request_id=execution_request_id,
+        status=in_progress_status,
+    )
+    update_case_status(execution_request["case_id"], in_progress_case_status)
+
+    execution_request = get_execution_request_by_id(execution_request_id)
+    attempt_number = get_execution_attempt_count(execution_request_id) + 1
+    attempt_id = f"ATT-{uuid.uuid4().hex[:8].upper()}"
+
+    request_payload = {
+        "execution_request_id": execution_request["execution_request_id"],
+        "operation_type": execution_request["operation_type"],
+        "amount_cents": execution_request["approved_amount_cents"],
+        "currency": execution_request["currency"],
+        "idempotency_key": execution_request["idempotency_key"],
+        "provider": execution_request["provider"],
+        "simulated_outcome": simulated_outcome,
+        "attempt_number": attempt_number,
+    }
+
+    provider_response = execute_billing_operation(
+        execution_request=execution_request,
+        simulated_outcome=simulated_outcome,
+    )
+
+    final_status = _map_provider_response_to_execution_status(provider_response)
+    final_case_status = _map_execution_status_to_case_status(final_status)
+
+    _store_execution_attempt(
+        attempt_id=attempt_id,
+        execution_request_id=execution_request_id,
+        attempt_number=attempt_number,
+        provider=execution_request["provider"],
+        request_payload=request_payload,
+        provider_response=provider_response,
+    )
+
+    _update_execution_request_status(
+        execution_request_id=execution_request_id,
+        status=final_status,
+        provider_object_id=provider_response["provider_object_id"],
+    )
+
+    update_case_status(execution_request["case_id"], final_case_status)
+
+    return get_execution_request_by_id(execution_request_id)
 
 
 def _store_execution_attempt(
@@ -532,5 +649,8 @@ def _map_execution_status_to_case_status(execution_status):
 
     if execution_status == PROCESSING:
         return CASE_STATUS_PROCESSING
+
+    if execution_status == RETRYING:
+        return CASE_STATUS_RETRYING
 
     return CASE_STATUS_FAILED

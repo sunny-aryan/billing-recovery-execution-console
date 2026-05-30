@@ -1,10 +1,11 @@
 """
-Execution constants for billing correction execution requests and attempts.
+Execution constants for billing correction execution requests, attempts, and retries.
 """
 
 # Execution request statuses.
 EXECUTION_PENDING = "execution_pending"
 PROCESSING = "processing"
+RETRYING = "retrying"
 SUCCEEDED = "succeeded"
 FAILED_TRANSIENT = "failed_transient"
 FAILED_PERMANENT = "failed_permanent"
@@ -15,6 +16,7 @@ CANCELLED = "cancelled"
 EXECUTION_REQUEST_STATUSES = [
     EXECUTION_PENDING,
     PROCESSING,
+    RETRYING,
     SUCCEEDED,
     FAILED_TRANSIENT,
     FAILED_PERMANENT,
@@ -66,9 +68,25 @@ ERROR_TRANSIENT = "transient"
 ERROR_PERMANENT = "permanent"
 ERROR_UNKNOWN = "unknown"
 
+# Retry policy.
+MAX_RETRY_ATTEMPTS = 3
+
+RETRY_ELIGIBLE_STATUSES = [
+    FAILED_TRANSIENT,
+]
+
+RETRY_BLOCKED_STATUSES = [
+    SUCCEEDED,
+    FAILED_PERMANENT,
+    NEEDS_MANUAL_REVIEW,
+    RECONCILED,
+    CANCELLED,
+]
+
 # Case statuses after execution.
 CASE_STATUS_EXECUTION_PENDING = "execution_pending"
 CASE_STATUS_PROCESSING = "processing"
+CASE_STATUS_RETRYING = "retrying"
 CASE_STATUS_SUCCEEDED = "succeeded"
 CASE_STATUS_FAILED = "failed"
 CASE_STATUS_NEEDS_MANUAL_REVIEW = "needs_manual_review"

@@ -180,3 +180,30 @@ The stronger product signal is to first model provider execution as an adapter b
 
 Provider execution should be isolated behind an adapter.  
 The internal execution lifecycle should not depend on one provider’s API shape.
+
+## Commit 7: Manual retry before background retry automation
+
+### Decision
+
+The project adds manual retry handling for transient execution failures before introducing automated background retries.
+
+### Why
+
+The portfolio goal at this stage is to demonstrate retry eligibility, retry-safe state transitions, attempt tracking, and retry limits.
+
+A manual retry button keeps the workflow easy to inspect and demo while still modeling the important execution reliability concepts.
+
+### Alternative Considered
+
+Add scheduled background retries immediately.
+
+### Why Rejected
+
+Background retries would require workers, scheduling, backoff timing, and async execution concerns that could distract from the core product concept.
+
+For this stage, the important distinction is not whether retry is scheduled or manual. The important distinction is that only transient failures are retryable, retries reuse the same execution request and idempotency key, and retry attempts are recorded.
+
+### Product Principle Reinforced
+
+Retry is not just “try again.”  
+Retry is a governed recovery action with eligibility rules, attempt limits, and auditability.

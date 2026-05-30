@@ -12,12 +12,14 @@ from src.execution.execution_service import (
     execute_with_mock_provider,
     get_execution_attempts,
     get_latest_execution_request,
+    get_retry_eligibility,
+    retry_with_mock_provider,
 )
 
 
 def render_execution_request_panel(case):
     """
-    Render execution request creation, provider execution, and attempt history.
+    Render execution request creation, provider execution, retry controls, and attempt history.
 
     Args:
         case (dict): Billing case record.
@@ -26,7 +28,8 @@ def render_execution_request_panel(case):
 
     st.caption(
         "An execution request turns a human-approved billing correction into a durable "
-        "system command. Mock provider execution now records attempts and provider outcomes."
+        "system command. Mock provider execution records attempts, and transient failures "
+        "can now be retried under deterministic retry policy."
     )
 
     latest_request = get_latest_execution_request(case["case_id"])
@@ -34,6 +37,7 @@ def render_execution_request_panel(case):
     if latest_request is not None:
         _render_execution_request(latest_request)
         _render_provider_execution_controls(latest_request)
+        _render_retry_controls(latest_request)
         _render_execution_attempts(latest_request)
         return
 
@@ -65,11 +69,7 @@ def render_execution_request_panel(case):
             else:
                 st.info("Execution request already exists for this approval.")
 
-            _render_execution_request(execution_request)
-
-            st.caption(
-                "Refresh or reopen the case to see the updated lifecycle status in the case header."
-            )
+            st.rerun()
 
         except ValueError as error:
             st.error(str(error))
@@ -128,7 +128,7 @@ def _render_execution_request(execution_request):
 
 def _render_provider_execution_controls(execution_request):
     """
-    Render mock provider execution controls.
+    Render first-attempt mock provider execution controls.
 
     Args:
         execution_request (dict): Execution request record.
@@ -137,12 +137,12 @@ def _render_provider_execution_controls(execution_request):
 
     if execution_request["status"] != EXECUTION_PENDING:
         st.info(
-            f"Provider execution is not available because the request is currently in status: {execution_request['status']}."
+            f"Initial provider execution is not available because the request is currently in status: {execution_request['status']}."
         )
         return
 
     st.caption(
-        "Select a mock provider outcome to simulate the external billing provider response."
+        "Select a mock provider outcome to simulate the first external billing provider response."
     )
 
     simulated_outcome = st.selectbox(
@@ -156,17 +156,56 @@ def _render_provider_execution_controls(execution_request):
         key=f"execute_mock_provider_{execution_request['execution_request_id']}",
     ):
         try:
-            updated_request = execute_with_mock_provider(
+            execute_with_mock_provider(
                 execution_request_id=execution_request["execution_request_id"],
                 simulated_outcome=simulated_outcome,
             )
 
             st.success("Provider execution attempt completed.")
-            _render_execution_request(updated_request)
+            st.rerun()
 
-            st.caption(
-                "Refresh or reopen the case to see the updated lifecycle status in the case header."
+        except ValueError as error:
+            st.error(str(error))
+
+
+def _render_retry_controls(execution_request):
+    """
+    Render retry controls for transient failures.
+
+    Args:
+        execution_request (dict): Execution request record.
+    """
+    st.subheader("Retry Controls")
+
+    retry_eligibility = get_retry_eligibility(
+        execution_request["execution_request_id"]
+    )
+
+    if not retry_eligibility["is_retryable"]:
+        st.info(retry_eligibility["reason"])
+        return
+
+    st.warning(retry_eligibility["reason"])
+    st.metric("Attempts remaining", retry_eligibility["attempts_remaining"])
+
+    simulated_retry_outcome = st.selectbox(
+        "Mock retry outcome",
+        options=MOCK_PROVIDER_OUTCOMES,
+        key=f"mock_retry_outcome_{execution_request['execution_request_id']}",
+    )
+
+    if st.button(
+        "Retry failed execution",
+        key=f"retry_execution_{execution_request['execution_request_id']}",
+    ):
+        try:
+            retry_with_mock_provider(
+                execution_request_id=execution_request["execution_request_id"],
+                simulated_outcome=simulated_retry_outcome,
             )
+
+            st.success("Retry attempt completed.")
+            st.rerun()
 
         except ValueError as error:
             st.error(str(error))

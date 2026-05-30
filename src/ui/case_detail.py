@@ -87,20 +87,15 @@ def render_case_detail(case):
 
     st.info(
         "This case now supports deterministic policy evaluation, human approval capture, "
-        "durable execution request creation, mock provider execution, and execution attempt tracking. "
-        "Retries, reconciliation, and manual recovery will be added in future commits."
+        "durable execution request creation, mock provider execution, execution attempt tracking, "
+        "and retry handling for transient failures. Reconciliation and manual recovery will be added "
+        "in future commits."
     )
 
     st.subheader("Future Recovery Controls")
 
-    future_col_1, future_col_2 = st.columns(2)
-
-    with future_col_1:
-        st.button("Retry failed execution", disabled=True)
-
-    with future_col_2:
-        st.button("Run reconciliation", disabled=True)
+    st.button("Run reconciliation", disabled=True)
 
     st.caption(
-        "Disabled controls are intentional placeholders for the upcoming retry and reconciliation lifecycle."
+        "Disabled controls are intentional placeholders for the upcoming reconciliation lifecycle."
     )

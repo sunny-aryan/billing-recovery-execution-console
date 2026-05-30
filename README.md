@@ -42,6 +42,11 @@ The current implementation supports:
 - execution attempt tracking
 - provider success, transient failure, permanent failure, and timeout simulation
 - execution status transitions after provider response
+- retry eligibility evaluation
+- manual retry for transient execution failures
+- maximum retry limit
+- retry attempt tracking
+- automatic movement to manual review after retry limit is reached
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 

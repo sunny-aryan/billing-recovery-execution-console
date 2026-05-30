@@ -29,14 +29,10 @@ def render_policy_panel(case):
         _render_policy_result(latest_evaluation)
 
     if st.button("Evaluate policy", key=f"evaluate_policy_{case['case_id']}"):
-        evaluation = evaluate_and_store_policy(case)
+        evaluate_and_store_policy(case)
 
         st.success("Policy evaluation completed and stored.")
-        _render_policy_result(evaluation)
-
-        st.caption(
-            "Refresh or reopen the case to see the updated lifecycle status in the case header."
-        )
+        st.rerun()
 
 
 def _render_policy_result(evaluation):
