@@ -9,6 +9,7 @@ unknown, or needs manual review.
 import uuid
 
 from src.cases.case_service import update_case_status
+from src.audit.audit_service import record_audit_event
 from src.database import get_connection
 from src.execution.execution_rules import (
     CASE_STATUS_NEEDS_MANUAL_REVIEW,
@@ -97,6 +98,24 @@ def run_reconciliation(execution_request_id, simulated_provider_state=None):
 
     conn.commit()
     conn.close()
+
+    record_audit_event(
+        case_id=execution_request["case_id"],
+        entity_type="reconciliation_run",
+        entity_id=reconciliation_id,
+        event_type="reconciliation_completed",
+        actor_type="system",
+        actor_name="reconciliation_service",
+        details={
+            "execution_request_id": execution_request_id,
+            "internal_status": execution_request["status"],
+            "provider_status": provider_lookup["provider_status"],
+            "provider_object_id": provider_lookup["provider_object_id"],
+            "result": reconciliation_result["result"],
+            "mismatch_reason": reconciliation_result["mismatch_reason"],
+            "action_taken": reconciliation_result["action_taken"],
+        },
+    )
 
     _apply_reconciliation_action(
         execution_request=execution_request,

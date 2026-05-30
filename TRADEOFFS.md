@@ -268,3 +268,35 @@ In a reliable execution system, operators should first understand whether the ex
 
 Manual recovery is not a shortcut around system controls.  
 It is a governed path for cases automation cannot safely resolve.
+
+## Commit 10: Centralized audit trail after core workflow maturity
+
+### Decision
+
+The project adds centralized audit logging after policy, approval, execution, retry, reconciliation, and manual recovery are already modeled.
+
+### Why
+
+Each workflow table stores domain-specific state, but operators and auditors need a chronological event history across the entire case lifecycle.
+
+A centralized audit trail answers:
+
+- what happened
+- when it happened
+- who or what performed the action
+- which entity changed
+- what structured details were recorded
+
+### Alternative Considered
+
+Rely only on individual workflow tables such as approvals, execution attempts, and reconciliation runs.
+
+### Why Rejected
+
+Those tables are useful for workflow state, but they do not provide a unified timeline.
+
+A reliable execution system needs both domain tables and a cross-cutting audit log.
+
+### Product Principle Reinforced
+
+Money-impacting workflows must be explainable after the fact.

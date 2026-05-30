@@ -27,6 +27,7 @@ def initialize_database():
     Commit 6 added the execution_attempts table.
     Commit 8 added the reconciliation_runs table.
     Commit 9 adds the manual_recovery_actions table.
+    Commit 10 adds the audit_events table.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -158,6 +159,22 @@ def initialize_database():
             new_execution_status TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (execution_request_id) REFERENCES execution_requests(execution_request_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS audit_events (
+            event_id TEXT PRIMARY KEY,
+            case_id TEXT,
+            entity_type TEXT NOT NULL,
+            entity_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            actor_type TEXT NOT NULL,
+            actor_name TEXT NOT NULL,
+            details_json TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
         """
     )

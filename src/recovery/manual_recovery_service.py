@@ -9,6 +9,7 @@ references, or reopen cases for investigation.
 import uuid
 
 from src.cases.case_service import update_case_status
+from src.audit.audit_service import record_audit_event
 from src.database import get_connection
 from src.execution.execution_rules import (
     CASE_STATUS_CANCELLED,
@@ -143,6 +144,25 @@ def create_manual_recovery_action(
 
     conn.commit()
     conn.close()
+
+    record_audit_event(
+        case_id=execution_request["case_id"],
+        entity_type="manual_recovery_action",
+        entity_id=manual_recovery_id,
+        event_type="manual_recovery_recorded",
+        actor_type="operator",
+        actor_name=operator_name.strip(),
+        details={
+            "execution_request_id": execution_request_id,
+            "action_type": action_type,
+            "provider_reference_id": provider_reference_id.strip()
+            if provider_reference_id
+            else None,
+            "previous_execution_status": previous_status,
+            "new_execution_status": new_status,
+            "rationale": rationale.strip(),
+        },
+    )
 
     return {
         "manual_recovery_id": manual_recovery_id,

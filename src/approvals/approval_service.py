@@ -19,6 +19,7 @@ from src.approvals.approval_rules import (
     STATUS_REJECTED,
 )
 from src.cases.case_service import update_case_status
+from src.audit.audit_service import record_audit_event
 from src.database import get_connection
 from src.policy.policy_service import get_latest_policy_evaluation
 from src.policy.rules import (
@@ -182,6 +183,23 @@ def create_approval_decision(
         update_case_status(case_id, STATUS_APPROVED)
     elif decision == REJECTED:
         update_case_status(case_id, STATUS_REJECTED)
+
+    record_audit_event(
+        case_id=case_id,
+        entity_type="approval",
+        entity_id=approval_id,
+        event_type="approval_decision_recorded",
+        actor_type="human",
+        actor_name=approver_name.strip(),
+        details={
+            "approver_role": approver_role,
+            "decision": decision,
+            "approved_action": approved_action,
+            "approved_amount_cents": approved_amount_cents,
+            "policy_evaluation_id": latest_policy["evaluation_id"],
+            "rationale": rationale.strip(),
+        },
+    )
 
     return {
         "approval_id": approval_id,

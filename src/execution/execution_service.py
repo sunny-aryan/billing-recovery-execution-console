@@ -17,6 +17,7 @@ import json
 import uuid
 
 from src.approvals.approval_rules import APPROVED
+from src.audit.audit_service import record_audit_event
 from src.approvals.approval_service import get_latest_approval
 from src.cases.case_service import update_case_status
 from src.database import get_connection
@@ -128,6 +129,24 @@ def create_execution_request(case):
 
     update_case_status(case["case_id"], CASE_STATUS_EXECUTION_PENDING)
 
+    record_audit_event(
+        case_id=case["case_id"],
+        entity_type="execution_request",
+        entity_id=execution_request_id,
+        event_type="execution_request_created",
+        actor_type="system",
+        actor_name="execution_service",
+        details={
+            "approval_id": latest_approval["approval_id"],
+            "operation_type": operation_type,
+            "provider": MOCK_BILLING_PROVIDER,
+            "approved_amount_cents": approved_amount_cents,
+            "currency": case["currency"],
+            "idempotency_key": idempotency_key,
+            "status": EXECUTION_PENDING,
+        },
+    )
+
     created_request = get_execution_request_by_id(execution_request_id)
 
     return created_request, True
@@ -238,6 +257,19 @@ def mark_execution_reconciled(execution_request_id):
         CASE_STATUS_RECONCILED,
     )
 
+    record_audit_event(
+        case_id=execution_request["case_id"],
+        entity_type="execution_request",
+        entity_id=execution_request_id,
+        event_type="execution_marked_reconciled",
+        actor_type="system",
+        actor_name="reconciliation_service",
+        details={
+            "previous_status": execution_request["status"],
+            "new_status": RECONCILED,
+        },
+    )
+
 def update_execution_request_status(execution_request_id, status):
     """
     Public helper to update execution request status.
@@ -254,6 +286,19 @@ def update_execution_request_status(execution_request_id, status):
     _update_execution_request_status(
         execution_request_id=execution_request_id,
         status=status,
+    )
+
+    record_audit_event(
+        case_id=execution_request["case_id"],
+        entity_type="execution_request",
+        entity_id=execution_request_id,
+        event_type="execution_status_updated",
+        actor_type="system",
+        actor_name="execution_service",
+        details={
+            "previous_status": execution_request["status"],
+            "new_status": status,
+        },
     )
 
 
@@ -580,6 +625,25 @@ def _run_provider_attempt(
         provider=execution_request["provider"],
         request_payload=request_payload,
         provider_response=provider_response,
+    )
+
+    record_audit_event(
+        case_id=execution_request["case_id"],
+        entity_type="execution_attempt",
+        entity_id=attempt_id,
+        event_type="provider_execution_attempt_recorded",
+        actor_type="provider",
+        actor_name=execution_request["provider"],
+        details={
+            "execution_request_id": execution_request_id,
+            "attempt_number": attempt_number,
+            "simulated_outcome": simulated_outcome,
+            "provider_status": provider_response["provider_status"],
+            "error_type": provider_response["error_type"],
+            "error_code": provider_response["error_code"],
+            "final_execution_status": final_status,
+            "idempotency_key": execution_request["idempotency_key"],
+        },
     )
 
     _update_execution_request_status(

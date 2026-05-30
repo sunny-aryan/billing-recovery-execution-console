@@ -59,6 +59,10 @@ The current implementation supports:
 - provider reference attachment
 - manual recovery history
 - state transitions to manually resolved, cancelled, or reopened
+- centralized audit trail
+- audit events for policy evaluation, approval, execution request creation, provider attempts, reconciliation, and manual recovery
+- chronological case-level audit history
+- structured JSON audit event details
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -133,11 +137,11 @@ python3 -m streamlit run app.py
 
 The current version does not yet include:
 
-- centralized audit logging across all workflow events
 - real Stripe test-mode execution
 - background scheduled retries
 - provider webhooks
 - production-grade permissions
+- production observability
 
 These are planned for upcoming commits.
 

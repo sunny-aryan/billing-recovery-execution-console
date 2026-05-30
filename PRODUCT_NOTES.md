@@ -260,6 +260,40 @@ The key product boundary is:
 
 > Human intervention is allowed, but it must be explicit, reasoned, and recorded.
 
+## Commit 10 Product Decision: Audit as a Cross-Cutting System Layer
+
+Commit 10 adds centralized audit logging across the execution workflow.
+
+This is important because reliable execution is not only about completing actions safely. It is also about making every important action explainable after the fact.
+
+The audit trail captures:
+
+- policy evaluation
+- approval decisions
+- execution request creation
+- provider execution attempts
+- retries
+- reconciliation results
+- manual recovery actions
+
+## Commit 10 Workflow Progression
+
+The product now supports:
+
+billing case  
+→ deterministic policy evaluation  
+→ human approval  
+→ durable execution request  
+→ provider execution attempt  
+→ retry if transient  
+→ reconciliation  
+→ manual recovery if unresolved  
+→ centralized audit trail
+
+The key product boundary is:
+
+> Workflow tables store current and historical state. Audit events explain the lifecycle across systems and actors.
+
 ## Why Billing Recovery?
 
 Billing corrections are a strong domain for this project because they involve:

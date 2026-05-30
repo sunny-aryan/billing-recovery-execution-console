@@ -13,6 +13,7 @@ import uuid
 
 from src.database import get_connection
 from src.cases.case_service import update_case_status
+from src.audit.audit_service import record_audit_event
 from src.policy.policy_engine import evaluate_policy
 from src.policy.rules import (
     BLOCKED,
@@ -69,6 +70,23 @@ def evaluate_and_store_policy(case):
 
     next_status = _get_case_status_for_policy_outcome(policy_result["outcome"])
     update_case_status(case["case_id"], next_status)
+
+    record_audit_event(
+        case_id=case["case_id"],
+        entity_type="policy_evaluation",
+        entity_id=evaluation_id,
+        event_type="policy_evaluated",
+        actor_type="system",
+        actor_name="policy_engine",
+        details={
+            "outcome": policy_result["outcome"],
+            "risk_level": policy_result["risk_level"],
+            "requires_manager_approval": policy_result["requires_manager_approval"],
+            "is_blocked": policy_result["is_blocked"],
+            "rules_triggered": policy_result["rules_triggered"],
+            "case_status_after": next_status,
+        },
+    )    
 
     return {
         "evaluation_id": evaluation_id,

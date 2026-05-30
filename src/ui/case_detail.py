@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.cases.case_service import format_amount
+from src.ui.audit_panel import render_audit_panel
 from src.execution.execution_service import get_latest_execution_request
 from src.ui.approval_panel import render_approval_panel
 from src.ui.execution_request_panel import render_execution_request_panel
@@ -92,6 +93,10 @@ def render_case_detail(case):
     st.divider()
 
     render_manual_recovery_panel(latest_execution_request)
+
+    st.divider()
+
+    render_audit_panel(case)
 
     st.divider()
 
