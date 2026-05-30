@@ -35,8 +35,11 @@ The current implementation supports:
 - human approval and rejection capture
 - role-aware approval validation
 - approval rationale capture
+- durable execution request creation
+- deterministic idempotency key generation
+- duplicate execution request prevention
 
-Policy evaluation must happen before approval. Approval must happen before future execution requests.
+Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
 
 ## Target Users

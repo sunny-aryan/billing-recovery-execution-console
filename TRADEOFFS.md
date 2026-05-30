@@ -109,3 +109,41 @@ For this project, execution must be downstream of both deterministic policy eval
 
 Do not execute what has not been approved.  
 Do not approve what policy has not evaluated.
+
+## Commit 5: Create execution requests before provider execution
+
+### Decision
+
+The project adds durable execution request creation before adding provider API calls.
+
+### Why
+
+A human approval should not directly trigger an external provider write.
+
+The system should first create a durable internal execution request that records:
+
+- the source case
+- the approval used
+- the operation type
+- the amount
+- the provider target
+- the execution status
+- the idempotency key
+
+This creates a reliable internal command that future provider execution attempts can use.
+
+### Alternative Considered
+
+Call the provider immediately after human approval.
+
+### Why Rejected
+
+That would blur approval, execution request creation, and provider execution into one step.
+
+Real execution systems need durable intermediate state so failures can be retried, audited, and reconciled.
+
+### Product Principle Reinforced
+
+Human approval authorizes execution.  
+Execution requests make that authorization durable.  
+Provider attempts should be separate, retryable, and auditable.

@@ -22,7 +22,8 @@ def initialize_database():
 
     Commit 1 created the billing_cases table.
     Commit 3 added the policy_evaluations table.
-    Commit 4 adds the approvals table.
+    Commit 4 added the approvals table.
+    Commit 5 adds the execution_requests table.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -79,6 +80,27 @@ def initialize_database():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (case_id) REFERENCES billing_cases(case_id),
             FOREIGN KEY (policy_evaluation_id) REFERENCES policy_evaluations(evaluation_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS execution_requests (
+            execution_request_id TEXT PRIMARY KEY,
+            case_id TEXT NOT NULL,
+            approval_id TEXT NOT NULL,
+            operation_type TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            approved_amount_cents INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            idempotency_key TEXT NOT NULL UNIQUE,
+            status TEXT NOT NULL,
+            provider_object_id TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (case_id) REFERENCES billing_cases(case_id),
+            FOREIGN KEY (approval_id) REFERENCES approvals(approval_id)
         )
         """
     )

@@ -99,6 +99,35 @@ billing case
 → future execution request
 ```
 
+## Commit 5 Product Decision: Execution Request Before Provider Write
+
+Commit 5 adds durable execution request creation with deterministic idempotency keys.
+
+This is important because the system should not call an external billing provider directly from the approval action.
+
+The workflow now separates:
+
+- human approval
+- execution request creation
+- future provider execution attempt
+- future reconciliation
+
+This separation makes the execution lifecycle easier to reason about, retry, audit, and recover.
+
+## Commit 5 Workflow Progression
+
+The product now supports:
+
+```text
+billing case
+→ deterministic policy evaluation
+→ human approval
+→ durable execution request
+→ future provider execution
+```
+
+The key product boundary is: Approval authorizes the correction. The execution request turns that authorization into a durable system command. Provider execution remains a separate step.
+
 ## Why Billing Recovery?
 
 Billing corrections are a strong domain for this project because they involve:

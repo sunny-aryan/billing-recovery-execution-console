@@ -2,6 +2,7 @@ import streamlit as st
 
 from src.cases.case_service import format_amount
 from src.ui.approval_panel import render_approval_panel
+from src.ui.execution_request_panel import render_execution_request_panel
 from src.ui.policy_panel import render_policy_panel
 
 
@@ -78,12 +79,16 @@ def render_case_detail(case):
 
     st.divider()
 
+    render_execution_request_panel(case)
+
+    st.divider()
+
     st.subheader("Current Workflow Status")
 
     st.info(
-        "This case now supports deterministic policy evaluation and human approval capture. "
-        "Execution requests, idempotency, retries, reconciliation, and manual recovery "
-        "will be added in future commits."
+        "This case now supports deterministic policy evaluation, human approval capture, "
+        "and durable execution request creation with idempotency keys. Provider execution, "
+        "attempt tracking, retries, reconciliation, and manual recovery will be added in future commits."
     )
 
     st.subheader("Future Execution Controls")
@@ -91,7 +96,7 @@ def render_case_detail(case):
     future_col_1, future_col_2, future_col_3 = st.columns(3)
 
     with future_col_1:
-        st.button("Create execution request", disabled=True)
+        st.button("Execute with provider", disabled=True)
 
     with future_col_2:
         st.button("Retry failed execution", disabled=True)
