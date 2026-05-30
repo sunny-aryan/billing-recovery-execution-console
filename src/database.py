@@ -24,7 +24,8 @@ def initialize_database():
     Commit 3 added the policy_evaluations table.
     Commit 4 added the approvals table.
     Commit 5 added the execution_requests table.
-    Commit 6 adds the execution_attempts table.
+    Commit 6 added the execution_attempts table.
+    Commit 8 adds the reconciliation_runs table.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -121,6 +122,23 @@ def initialize_database():
             error_message TEXT,
             started_at TEXT DEFAULT CURRENT_TIMESTAMP,
             finished_at TEXT,
+            FOREIGN KEY (execution_request_id) REFERENCES execution_requests(execution_request_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reconciliation_runs (
+            reconciliation_id TEXT PRIMARY KEY,
+            execution_request_id TEXT NOT NULL,
+            internal_status TEXT NOT NULL,
+            provider_status TEXT NOT NULL,
+            provider_object_id TEXT,
+            result TEXT NOT NULL,
+            mismatch_reason TEXT,
+            action_taken TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (execution_request_id) REFERENCES execution_requests(execution_request_id)
         )
         """

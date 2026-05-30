@@ -1,5 +1,5 @@
 """
-Execution constants for billing correction execution requests, attempts, and retries.
+Execution constants for billing correction execution requests, attempts, retries, and reconciliation.
 """
 
 # Execution request statuses.
@@ -62,6 +62,8 @@ MOCK_PROVIDER_OUTCOMES = [
 PROVIDER_SUCCEEDED = "succeeded"
 PROVIDER_FAILED = "failed"
 PROVIDER_TIMEOUT = "timeout"
+PROVIDER_NOT_FOUND = "not_found"
+PROVIDER_UNKNOWN = "unknown"
 
 # Error types.
 ERROR_TRANSIENT = "transient"
@@ -83,10 +85,24 @@ RETRY_BLOCKED_STATUSES = [
     CANCELLED,
 ]
 
-# Case statuses after execution.
+# Reconciliation results.
+RECON_MATCHED_SUCCESS = "matched_success"
+RECON_MATCHED_FAILURE = "matched_failure"
+RECON_PROVIDER_SUCCEEDED_INTERNAL_NOT_RECORDED = "provider_succeeded_internal_not_recorded"
+RECON_INTERNAL_SUCCEEDED_PROVIDER_MISSING = "internal_succeeded_provider_missing"
+RECON_UNKNOWN_PROVIDER_STATE = "unknown_provider_state"
+RECON_NOT_READY = "not_ready_for_reconciliation"
+
+# Reconciliation actions.
+RECON_ACTION_MARK_RECONCILED = "mark_reconciled"
+RECON_ACTION_ROUTE_MANUAL_REVIEW = "route_manual_review"
+RECON_ACTION_NO_CHANGE = "no_change"
+
+# Case statuses after execution/reconciliation.
 CASE_STATUS_EXECUTION_PENDING = "execution_pending"
 CASE_STATUS_PROCESSING = "processing"
 CASE_STATUS_RETRYING = "retrying"
 CASE_STATUS_SUCCEEDED = "succeeded"
 CASE_STATUS_FAILED = "failed"
 CASE_STATUS_NEEDS_MANUAL_REVIEW = "needs_manual_review"
+CASE_STATUS_RECONCILED = "reconciled"

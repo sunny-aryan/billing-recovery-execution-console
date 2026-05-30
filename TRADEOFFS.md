@@ -207,3 +207,30 @@ For this stage, the important distinction is not whether retry is scheduled or m
 
 Retry is not just “try again.”  
 Retry is a governed recovery action with eligibility rules, attempt limits, and auditability.
+
+## Commit 8: Add reconciliation before manual recovery
+
+### Decision
+
+The project adds reconciliation before building a full manual recovery workflow.
+
+### Why
+
+Manual recovery should be driven by a known mismatch or unknown provider state, not by vague failure status.
+
+Reconciliation creates the verification layer that determines whether internal execution state matches the provider source of truth.
+
+### Alternative Considered
+
+Move directly from failed or unknown execution states into manual recovery.
+
+### Why Rejected
+
+That would skip the verification step.
+
+In real execution systems, operators need to know whether the provider actually performed the action before deciding whether to retry, manually resolve, or escalate.
+
+### Product Principle Reinforced
+
+Execution is not complete when the provider call returns.  
+Execution is complete when internal state and provider source of truth are reconciled.

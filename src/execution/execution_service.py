@@ -42,6 +42,8 @@ from src.execution.execution_rules import (
     PROVIDER_TIMEOUT,
     RETRYING,
     SUCCEEDED,
+    CASE_STATUS_RECONCILED,
+    RECONCILED,
 )
 from src.execution.idempotency import generate_idempotency_key
 from src.execution.retry_policy import evaluate_retry_eligibility
@@ -213,6 +215,28 @@ def retry_with_mock_provider(execution_request_id, simulated_outcome):
         return get_execution_request_by_id(execution_request_id)
 
     return updated_request
+
+def mark_execution_reconciled(execution_request_id):
+    """
+    Mark an execution request as reconciled.
+
+    Args:
+        execution_request_id (str): Execution request identifier.
+    """
+    execution_request = get_execution_request_by_id(execution_request_id)
+
+    if execution_request is None:
+        raise ValueError("Execution request not found.")
+
+    _update_execution_request_status(
+        execution_request_id=execution_request_id,
+        status=RECONCILED,
+    )
+
+    update_case_status(
+        execution_request["case_id"],
+        CASE_STATUS_RECONCILED,
+    )
 
 
 def get_latest_execution_request(case_id):

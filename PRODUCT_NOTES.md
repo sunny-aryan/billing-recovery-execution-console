@@ -196,6 +196,37 @@ The key product boundary is:
 
 > Retry is governed by deterministic policy. It is not a generic repeat button.
 
+## Commit 8 Product Decision: Reconciliation Before Manual Recovery
+
+Commit 8 adds reconciliation against a mock provider source of truth.
+
+This is important because manual recovery should be based on verified state, not only on internal status.
+
+The workflow now separates:
+
+- execution attempt result
+- internal execution state
+- provider source-of-truth lookup
+- reconciliation result
+- routing to reconciled or manual review
+
+## Commit 8 Workflow Progression
+
+The product now supports:
+
+billing case  
+→ deterministic policy evaluation  
+→ human approval  
+→ durable execution request  
+→ mock provider execution attempt  
+→ retry if transient  
+→ reconciliation against provider source of truth  
+→ reconciled / needs manual review
+
+The key product boundary is:
+
+> Internal status is not enough. Reliable execution requires source-of-truth verification.
+
 ## Why Billing Recovery?
 
 Billing corrections are a strong domain for this project because they involve:

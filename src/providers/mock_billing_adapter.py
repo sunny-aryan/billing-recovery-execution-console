@@ -3,7 +3,7 @@ Mock billing provider adapter.
 
 This adapter simulates external provider execution outcomes without calling
 a real billing API. It lets the product demonstrate success, transient failure,
-permanent failure, and timeout paths deterministically.
+permanent failure, timeout, and reconciliation paths deterministically.
 """
 
 import uuid
@@ -17,8 +17,10 @@ from src.execution.execution_rules import (
     MOCK_TIMEOUT,
     MOCK_TRANSIENT_FAILURE,
     PROVIDER_FAILED,
+    PROVIDER_NOT_FOUND,
     PROVIDER_SUCCEEDED,
     PROVIDER_TIMEOUT,
+    PROVIDER_UNKNOWN,
 )
 
 
@@ -104,5 +106,98 @@ def execute_billing_operation(execution_request, simulated_outcome):
             "status": "failed",
             "reason": "unsupported_mock_outcome",
             "retryable": False,
+        },
+    }
+
+
+def lookup_provider_state(execution_request, simulated_provider_state=None):
+    """
+    Simulate looking up the provider source-of-truth state for reconciliation.
+
+    Args:
+        execution_request (dict): Execution request record.
+        simulated_provider_state (str | None): Optional override for testing mismatches.
+            Supported values:
+            - succeeded
+            - not_found
+            - unknown
+
+    Returns:
+        dict: Provider source-of-truth lookup result.
+    """
+    if simulated_provider_state == PROVIDER_SUCCEEDED:
+        return {
+            "provider_status": PROVIDER_SUCCEEDED,
+            "provider_object_id": execution_request["provider_object_id"]
+            or f"mock_recovered_{execution_request['execution_request_id'].lower()}",
+            "lookup_payload": {
+                "status": PROVIDER_SUCCEEDED,
+                "source": "mock_provider_lookup",
+                "simulated_override": True,
+            },
+        }
+
+    if simulated_provider_state == PROVIDER_NOT_FOUND:
+        return {
+            "provider_status": PROVIDER_NOT_FOUND,
+            "provider_object_id": None,
+            "lookup_payload": {
+                "status": PROVIDER_NOT_FOUND,
+                "source": "mock_provider_lookup",
+                "simulated_override": True,
+            },
+        }
+
+    if simulated_provider_state == PROVIDER_UNKNOWN:
+        return {
+            "provider_status": PROVIDER_UNKNOWN,
+            "provider_object_id": None,
+            "lookup_payload": {
+                "status": PROVIDER_UNKNOWN,
+                "source": "mock_provider_lookup",
+                "simulated_override": True,
+            },
+        }
+
+    if execution_request["provider_object_id"]:
+        return {
+            "provider_status": PROVIDER_SUCCEEDED,
+            "provider_object_id": execution_request["provider_object_id"],
+            "lookup_payload": {
+                "status": PROVIDER_SUCCEEDED,
+                "source": "mock_provider_lookup",
+                "simulated_override": False,
+            },
+        }
+
+    if execution_request["status"] in ["failed_transient", "failed_permanent"]:
+        return {
+            "provider_status": PROVIDER_NOT_FOUND,
+            "provider_object_id": None,
+            "lookup_payload": {
+                "status": PROVIDER_NOT_FOUND,
+                "source": "mock_provider_lookup",
+                "simulated_override": False,
+            },
+        }
+
+    if execution_request["status"] == "needs_manual_review":
+        return {
+            "provider_status": PROVIDER_UNKNOWN,
+            "provider_object_id": None,
+            "lookup_payload": {
+                "status": PROVIDER_UNKNOWN,
+                "source": "mock_provider_lookup",
+                "simulated_override": False,
+            },
+        }
+
+    return {
+        "provider_status": PROVIDER_UNKNOWN,
+        "provider_object_id": None,
+        "lookup_payload": {
+            "status": PROVIDER_UNKNOWN,
+            "source": "mock_provider_lookup",
+            "simulated_override": False,
         },
     }

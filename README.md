@@ -47,6 +47,12 @@ The current implementation supports:
 - maximum retry limit
 - retry attempt tracking
 - automatic movement to manual review after retry limit is reached
+- reconciliation against mock provider source of truth
+- reconciliation history
+- matched success detection
+- matched failure detection
+- mismatch detection
+- routing unsafe mismatches to manual review
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -121,11 +127,13 @@ python3 -m streamlit run app.py
 
 The current version does not yet include:
 
-- retry logic
-- reconciliation
+The current version does not yet include:
+
+- full manual recovery workflow
 - audit logging
-- manual recovery paths
 - real Stripe test-mode execution
+- background scheduled retries
+- provider webhooks
 
 These are planned for upcoming commits.
 

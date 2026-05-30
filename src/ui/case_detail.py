@@ -1,9 +1,11 @@
 import streamlit as st
 
 from src.cases.case_service import format_amount
+from src.execution.execution_service import get_latest_execution_request
 from src.ui.approval_panel import render_approval_panel
 from src.ui.execution_request_panel import render_execution_request_panel
 from src.ui.policy_panel import render_policy_panel
+from src.ui.reconciliation_panel import render_reconciliation_panel
 
 
 def render_case_detail(case):
@@ -83,19 +85,24 @@ def render_case_detail(case):
 
     st.divider()
 
+    latest_execution_request = get_latest_execution_request(case["case_id"])
+    render_reconciliation_panel(latest_execution_request)
+
+    st.divider()
+
     st.subheader("Current Workflow Status")
 
     st.info(
         "This case now supports deterministic policy evaluation, human approval capture, "
         "durable execution request creation, mock provider execution, execution attempt tracking, "
-        "and retry handling for transient failures. Reconciliation and manual recovery will be added "
-        "in future commits."
+        "retry handling, and reconciliation against a mock provider source of truth. "
+        "Manual recovery and audit logging will be added in future commits."
     )
 
     st.subheader("Future Recovery Controls")
 
-    st.button("Run reconciliation", disabled=True)
+    st.button("Manual recovery action", disabled=True)
 
     st.caption(
-        "Disabled controls are intentional placeholders for the upcoming reconciliation lifecycle."
+        "Disabled controls are intentional placeholders for the upcoming manual recovery lifecycle."
     )
