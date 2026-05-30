@@ -23,30 +23,19 @@ This project focuses on the next progression:
 
 The goal is to model what happens when an approved operational decision must become a safe, durable, auditable action against an external system.
 
-## Current Status
+## Current Implementation
 
-This repository is in early implementation.
+The current implementation includes deterministic policy evaluation for billing corrections.
 
-Current implementation includes:
+Policy outcomes include:
 
-* Streamlit app shell
-* SQLite persistence
-* seeded synthetic billing correction cases
-* billing work queue
-* case detail view
-* modular architecture prepared for approval, execution, retry, reconciliation, and audit workflows
+- eligible for approval
+- requires manager approval
+- needs more review
+- blocked
 
-Upcoming commits will add:
+Policy evaluation is persisted in SQLite and updates the case lifecycle before approval or execution can happen.
 
-* deterministic policy evaluation
-* human approval workflow
-* execution request creation
-* idempotency keys
-* external provider adapter
-* retry handling
-* reconciliation
-* manual recovery queue
-* audit trail
 
 ## Target Users
 

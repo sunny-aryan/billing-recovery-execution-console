@@ -1,6 +1,7 @@
 # Trade-offs
 
-## Commit 1/2: Start with workflow foundation before external API integration
+## Commit 1 and 2: Start with workflow foundation before external API integration
+
 
 ### Decision
 
@@ -47,3 +48,30 @@ The mock provider is important because it allows the product to reliably demonst
 * timeout
 * provider success with internal state uncertainty
 * reconciliation mismatch
+
+
+## Commit 3: Add deterministic policy evaluation before approval
+
+### Decision
+
+The project adds deterministic policy evaluation before human approval or execution workflows.
+
+### Why
+
+Billing corrections are money-impacting actions. Before a human can approve a correction, the system should determine whether the case is eligible, blocked, or requires manager approval using deterministic rules.
+
+This creates a control layer that future approval and execution workflows can depend on.
+
+### Alternative Considered
+
+Allow cases to move directly from review to human approval.
+
+### Why Rejected
+
+That would make approval too dependent on human judgment alone and would weaken the product’s core safety model.
+
+For this project, approval should not be the first control. Policy evaluation should happen before approval, and execution should happen only after approval.
+
+### Product Principle Reinforced
+
+AI can assist with context, but deterministic systems must govern money-impacting workflow eligibility.

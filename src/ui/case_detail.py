@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.cases.case_service import format_amount
+from src.ui.policy_panel import render_policy_panel
 
 
 def render_case_detail(case):
@@ -61,19 +62,21 @@ def render_case_detail(case):
     st.divider()
 
     st.subheader("Billing Issue")
-
     st.write(case["evidence_summary"])
 
     st.subheader("Proposed Correction")
-
     st.write(case["proposed_correction"])
+
+    st.divider()
+
+    render_policy_panel(case)
 
     st.divider()
 
     st.subheader("Current Workflow Status")
 
     st.info(
-        "This case is currently in the review foundation stage. "
+        "This case now supports deterministic policy evaluation. "
         "Approval, execution, retry, reconciliation, and manual recovery workflows "
         "will be added in future commits."
     )
@@ -92,5 +95,5 @@ def render_case_detail(case):
         st.button("Run reconciliation", disabled=True)
 
     st.caption(
-        "Disabled controls are intentional placeholders for the upcoming execution lifecycle."
+        "Disabled controls are intentional placeholders for the upcoming approval and execution lifecycle."
     )

@@ -88,6 +88,35 @@ def get_case_by_id(case_id):
     return dict(row)
 
 
+def update_case_status(case_id, status):
+    """
+    Update the lifecycle status for a billing case.
+
+    Args:
+        case_id (str): Case identifier.
+        status (str): New case lifecycle status.
+
+    Returns:
+        None
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE billing_cases
+        SET
+            status = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE case_id = ?
+        """,
+        (status, case_id),
+    )
+
+    conn.commit()
+    conn.close()
+
+
 def format_amount(amount_cents, currency):
     """
     Format amount from minor units into a display-friendly currency string.

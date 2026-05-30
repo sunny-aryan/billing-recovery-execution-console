@@ -19,7 +19,9 @@ def get_connection():
 def initialize_database():
     """
     Create required database tables if they do not already exist.
-    Commit 1 only creates the billing_cases table.
+
+    Commit 1 created the billing_cases table.
+    Commit 3 adds the policy_evaluations table.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -40,6 +42,23 @@ def initialize_database():
             proposed_correction TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS policy_evaluations (
+            evaluation_id TEXT PRIMARY KEY,
+            case_id TEXT NOT NULL,
+            outcome TEXT NOT NULL,
+            risk_level TEXT NOT NULL,
+            requires_manager_approval INTEGER NOT NULL,
+            is_blocked INTEGER NOT NULL,
+            primary_reason TEXT NOT NULL,
+            rules_triggered_json TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (case_id) REFERENCES billing_cases(case_id)
         )
         """
     )
