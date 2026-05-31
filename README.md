@@ -1,7 +1,5 @@
 # Billing Recovery Execution Console
 
-A portfolio project demonstrating how a billing operations system can move from human-approved billing corrections to reliable execution, retry handling, reconciliation, and manual recovery.
-
 ## One-Sentence Summary
 
 A billing operations execution console that turns human-approved billing corrections into durable, idempotent provider execution requests with Stripe test-mode refunds, retry handling, reconciliation, manual recovery, auditability, and operational visibility.
@@ -27,7 +25,7 @@ This project models that lifecycle through a working Streamlit + SQLite system w
 
 ## Why This Project Exists
 
-This project is part of a product portfolio focused on realistic working systems rather than coding demos.
+This project is part of my [GitHub product portfolio](https://github.com/sunny-aryan) focused on realistic working systems rather than coding demos.
 
 Previous projects explored:
 
@@ -605,12 +603,73 @@ These cases are designed to support future policy, approval, execution, and reco
 
 ## How to Run Locally
 
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/sunny-aryan/billing-recovery-execution-console.git
+cd billing-recovery-execution-console
+```
+
+### 2. Create and activate a virtual environment
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
 pip install -r requirements.txt
+```
+
+### 4. Create a local `.env` file
+
+```bash
 cp .env.example .env
+```
+
+Add your OpenAI API key and STRIPE_SECRET_KEY:
+
+```text
+OPENAI_API_KEY=your_api_key_here
+STRIPE_SECRET_KEY=sk_test_your_test_key_here
+```
+
+The app can still run without an OpenAI and Stripe keys, but AI assistance will use deterministic fallback behavior.
+
+### 5. Run the Streamlit app
+
+You can use either one of the following two commands:
+
+```bash
+streamlit run app.py
+```
+
+```bash
 python3 -m streamlit run app.py
+```
+
+Streamlit will print a local URL in the terminal, usually:
+
+```bash
+http://localhost:8501
+```
+
+### 6. Local database behavior
+
+The app uses SQLite for local persistence.
+
+The generated database file is ignored by Git and can be safely reset:
+
+```bash
+rm billing_recovery.db
+```
+
+On restart, the app recreates the local database and seeds cases from:
+
+```text
+data/seed_cases.json
 ```
 
 ## Automated Tests

@@ -2,7 +2,7 @@
 
 ## Portfolio Goal
 
-Project 4 is designed to show progression from recommendation and approval workflows into reliable execution and recovery.
+This is Project 4 in my [GitHub product portfolio](https://github.com/sunny-aryan) is designed to show progression from recommendation and approval workflows into reliable execution and recovery.
 
 Previous portfolio projects demonstrated:
 
