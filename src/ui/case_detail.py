@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.cases.case_service import format_amount
+from src.ui.stripe_test_payment_panel import render_stripe_test_payment_panel
 from src.ui.ai_case_brief_panel import render_ai_case_brief_panel
 from src.ui.dependency_controls import render_dependency_status_summary
 from src.ui.audit_panel import render_audit_panel
@@ -89,6 +90,10 @@ def render_case_detail(case):
     st.divider()
 
     render_approval_panel(case)
+
+    st.divider()
+
+    render_stripe_test_payment_panel(case)
 
     st.divider()
 

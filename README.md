@@ -83,6 +83,11 @@ The current implementation supports:
 - Stripe test-mode configuration checks
 - provider adapter boundary for mock and Stripe providers
 - Stripe readiness display without making external API calls
+- Stripe test payment setup
+- Stripe live test-mode PaymentIntent creation
+- forced mock Stripe test payment metadata
+- fallback test payment metadata when Stripe setup fails
+- duplicate test payment prevention per case
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -174,6 +179,20 @@ Future commits will add:
 - Stripe test payment setup
 - Stripe test-mode refund execution
 - Stripe refund reconciliation
+
+## Stripe Test Payment Setup
+
+The app can prepare a refundable Stripe test payment for a billing correction case.
+
+Depending on the selected Stripe dependency mode:
+
+- **Live external API** creates a real Stripe test-mode PaymentIntent using the configured `STRIPE_SECRET_KEY`.
+- **Forced mock / demo mode** creates deterministic mock payment metadata without calling Stripe.
+- **Fallback** creates deterministic fallback metadata if live Stripe setup fails.
+
+This setup step does not issue a refund. It only prepares the external payment object that a later refund execution can reference.
+
+Stripe test payment setup prepares the external test object. The execution request represents the system’s durable command after human approval. Provider execution is the actual Stripe refund write performed against that command. Separating these steps makes the workflow retryable, auditable, and easier to reconcile.
 
 ## AI and Deterministic System Boundary
 

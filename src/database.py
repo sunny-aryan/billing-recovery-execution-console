@@ -30,6 +30,7 @@ def initialize_database():
     Commit 9 adds the manual_recovery_actions table.
     Commit 10 adds the audit_events table.
     Commit 14 adds the ai_case_briefs table.
+    Commit 16 adds the stripe_test_payments table.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -195,6 +196,26 @@ def initialize_database():
             risk_notes_json TEXT NOT NULL,
             suggested_reviewer_questions_json TEXT NOT NULL,
             customer_message_draft TEXT NOT NULL,
+            error_message TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (case_id) REFERENCES billing_cases(case_id)
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS stripe_test_payments (
+            stripe_test_payment_id TEXT PRIMARY KEY,
+            case_id TEXT NOT NULL,
+            dependency_mode TEXT NOT NULL,
+            runtime_result TEXT NOT NULL,
+            source TEXT NOT NULL,
+            payment_intent_id TEXT NOT NULL,
+            charge_id TEXT,
+            amount_cents INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            payment_status TEXT NOT NULL,
             error_message TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (case_id) REFERENCES billing_cases(case_id)

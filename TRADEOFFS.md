@@ -454,3 +454,32 @@ The execution service should manage lifecycle state, idempotency, attempts, retr
 ### Product Principle Reinforced
 
 External provider realism should be added behind stable internal execution boundaries.
+
+## Commit 16: Separate Stripe test payment setup from refund execution
+
+### Decision
+
+The project adds Stripe test payment setup before Stripe refund execution.
+
+### Why
+
+A refund requires an existing payment object. Separating test payment setup from refund execution keeps the workflow easier to understand and debug.
+
+This also lets the project demonstrate external provider preparation without immediately coupling it to refund execution.
+
+### Alternative Considered
+
+Create a Stripe test payment and refund it in the same workflow step.
+
+### Why Rejected
+
+That would blur two different operational events:
+
+- preparing an external payment source
+- executing a refund against that source
+
+Keeping them separate makes the execution lifecycle clearer.
+
+### Product Principle Reinforced
+
+External execution should be decomposed into durable, inspectable steps.

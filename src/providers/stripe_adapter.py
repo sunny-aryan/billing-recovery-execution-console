@@ -14,6 +14,7 @@ Future commits will add:
 import os
 
 import stripe
+import uuid
 
 from src.dependencies.dependency_modes import (
     DEPENDENCY_MODE_FORCED_MOCK,
@@ -176,3 +177,93 @@ def build_stripe_runtime_context(dependency_mode):
         message="Unsupported Stripe dependency mode.",
         error_message=f"Unsupported dependency mode: {dependency_mode}",
     )
+
+
+def create_test_payment_intent(case, idempotency_key):
+    """
+    Create and confirm a Stripe test-mode PaymentIntent.
+
+    This is a real Stripe test-mode API call. It creates a successful test payment
+    using Stripe's test payment method pm_card_visa.
+
+    Args:
+        case (dict): Billing case record.
+        idempotency_key (str): Idempotency key for Stripe POST request.
+
+    Returns:
+        dict: Stripe payment metadata.
+    """
+    configure_stripe_client()
+
+    payment_intent = stripe.PaymentIntent.create(
+        amount=int(case["amount_cents"]),
+        currency=case["currency"].lower(),
+        payment_method="pm_card_visa",
+        confirm=True,
+        automatic_payment_methods={
+            "enabled": True,
+            "allow_redirects": "never",
+        },
+        metadata={
+            "case_id": case["case_id"],
+            "invoice_id": case["invoice_id"],
+            "purpose": "billing_recovery_test_payment",
+        },
+        idempotency_key=idempotency_key,
+    )
+
+    charge_id = None
+
+    if getattr(payment_intent, "latest_charge", None):
+        charge_id = payment_intent.latest_charge
+
+    return {
+        "payment_intent_id": payment_intent.id,
+        "charge_id": charge_id,
+        "amount_cents": payment_intent.amount,
+        "currency": payment_intent.currency.upper(),
+        "payment_status": payment_intent.status,
+        "raw_status": payment_intent.status,
+    }
+
+
+def build_mock_test_payment(case):
+    """
+    Build deterministic mock test payment metadata without calling Stripe.
+
+    Args:
+        case (dict): Billing case record.
+
+    Returns:
+        dict: Mock payment metadata.
+    """
+    return {
+        "payment_intent_id": f"pi_mock_{case['case_id'].lower()}",
+        "charge_id": f"ch_mock_{case['case_id'].lower()}",
+        "amount_cents": int(case["amount_cents"]),
+        "currency": case["currency"],
+        "payment_status": "succeeded",
+        "raw_status": "mock_succeeded",
+    }
+
+
+def build_fallback_test_payment(case):
+    """
+    Build fallback payment metadata when live Stripe setup fails.
+
+    Args:
+        case (dict): Billing case record.
+
+    Returns:
+        dict: Fallback payment metadata.
+    """
+    fallback_id = uuid.uuid4().hex[:10]
+
+    return {
+        "payment_intent_id": f"pi_fallback_{fallback_id}",
+        "charge_id": f"ch_fallback_{fallback_id}",
+        "amount_cents": int(case["amount_cents"]),
+        "currency": case["currency"],
+        "payment_status": "fallback_created",
+        "raw_status": "fallback_created",
+    }

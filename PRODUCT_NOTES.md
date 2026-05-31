@@ -477,3 +477,27 @@ The key product boundary is:
 
 > Execution services own workflow state. Provider adapters own external API behavior.
 
+## Commit 16 Product Decision: Stripe Test Payment Before Refund Execution
+
+Commit 16 adds Stripe test payment setup.
+
+This prepares the product for real Stripe refund execution while keeping the workflow controlled.
+
+The system now supports:
+
+- live Stripe test-mode PaymentIntent creation
+- forced mock payment setup for demos
+- fallback metadata when Stripe setup fails
+- local persistence of PaymentIntent and Charge metadata
+
+This makes the next execution step possible:
+
+Stripe test payment  
+→ approved execution request  
+→ Stripe refund execution  
+→ Stripe refund reconciliation
+
+The key product boundary is:
+
+> Preparing a refundable provider object is not the same as executing the refund.
+
