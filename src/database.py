@@ -29,6 +29,7 @@ def initialize_database():
     Commit 8 added the reconciliation_runs table.
     Commit 9 adds the manual_recovery_actions table.
     Commit 10 adds the audit_events table.
+    Commit 14 adds the ai_case_briefs table.
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -176,6 +177,27 @@ def initialize_database():
             actor_name TEXT NOT NULL,
             details_json TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ai_case_briefs (
+            brief_id TEXT PRIMARY KEY,
+            case_id TEXT NOT NULL,
+            dependency_mode TEXT NOT NULL,
+            runtime_result TEXT NOT NULL,
+            source TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            customer_impact TEXT NOT NULL,
+            missing_evidence_json TEXT NOT NULL,
+            risk_notes_json TEXT NOT NULL,
+            suggested_reviewer_questions_json TEXT NOT NULL,
+            customer_message_draft TEXT NOT NULL,
+            error_message TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (case_id) REFERENCES billing_cases(case_id)
         )
         """
     )

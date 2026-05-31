@@ -74,6 +74,11 @@ The current implementation supports:
 - external dependency mode controls for OpenAI and Stripe
 - demo-safe forced mock mode for upcoming external API integrations
 - separate OpenAI and Stripe dependency modes
+- AI billing case brief generation
+- OpenAI live mode support
+- forced mock AI brief mode
+- deterministic fallback when OpenAI is unavailable or invalid
+- AI brief audit events
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -108,6 +113,28 @@ Streamlit UI
 → Billing Provider Adapter
 → Reconciliation Service
 → SQLite Persistence + Audit Trail
+
+## AI Case Brief
+
+The Case Detail page includes an AI Case Brief section before policy evaluation.
+
+The brief can include:
+
+- case summary
+- customer impact
+- missing evidence
+- risk notes
+- suggested reviewer questions
+- customer message draft
+
+The AI brief is advisory only. It does not approve, reject, execute, retry, reconcile, or override deterministic policy.
+
+The OpenAI dependency can run in two modes:
+
+- **Live external API** — calls OpenAI using `OPENAI_API_KEY`
+- **Forced mock / demo mode** — returns a deterministic mock brief without making an external API call
+
+If live OpenAI mode fails, the system uses a deterministic fallback brief and records that fallback was used.
 
 ## External Dependency Modes
 

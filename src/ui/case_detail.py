@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.cases.case_service import format_amount
+from src.ui.ai_case_brief_panel import render_ai_case_brief_panel
 from src.ui.dependency_controls import render_dependency_status_summary
 from src.ui.audit_panel import render_audit_panel
 from src.execution.execution_service import get_latest_execution_request
@@ -76,6 +77,10 @@ def render_case_detail(case):
 
     st.subheader("Proposed Correction")
     st.write(case["proposed_correction"])
+
+    st.divider()
+
+    render_ai_case_brief_panel(case)
 
     st.divider()
 

@@ -1,3 +1,5 @@
 streamlit
 pandas
 pytest
+openai
+python-dotenv

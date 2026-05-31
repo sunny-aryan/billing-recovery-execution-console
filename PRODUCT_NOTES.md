@@ -419,3 +419,42 @@ Upcoming commits will use these controls for:
 - Stripe refund execution
 - Stripe refund reconciliation
 
+## Commit 14 Product Decision: AI Brief as Advisory Context
+
+Commit 14 adds an OpenAI-powered billing case brief with forced mock and fallback behavior.
+
+This improves reviewer workflow without weakening execution controls.
+
+The AI brief helps with:
+
+- summarizing billing issue context
+- identifying missing evidence
+- highlighting risk notes
+- drafting customer-facing language
+
+It does not:
+
+- approve billing corrections
+- determine policy eligibility
+- create execution requests
+- call providers
+- retry failures
+- reconcile provider state
+- manually recover cases
+
+## Commit 14 Workflow Progression
+
+The product now supports:
+
+billing case  
+→ AI case brief  
+→ deterministic policy evaluation  
+→ human approval  
+→ durable execution request  
+→ provider execution  
+→ retry / reconciliation / recovery / audit
+
+The key product boundary is:
+
+> AI helps reviewers understand the case, but it does not control the money-impacting workflow.
+

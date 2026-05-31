@@ -1,4 +1,7 @@
 import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from src.database import initialize_database
 from src.dependencies.dependency_state import initialize_dependency_modes

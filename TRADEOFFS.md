@@ -399,3 +399,32 @@ That would make the app brittle during demos and would hide an important product
 ### Product Principle Reinforced
 
 External integrations should improve realism without making the core workflow fragile.
+
+## Commit 14: Advisory AI before deterministic policy
+
+### Decision
+
+The project adds an AI-generated billing case brief before deterministic policy evaluation.
+
+### Why
+
+Reviewers benefit from a concise summary of the billing issue, customer impact, missing evidence, and risk notes before deciding whether to proceed with policy evaluation and approval.
+
+The AI brief is intentionally advisory. It does not change policy outcomes, approval decisions, execution states, reconciliation results, or manual recovery actions.
+
+### Alternative Considered
+
+Let AI recommend approval or execution actions.
+
+### Why Rejected
+
+That would blur the project’s core control model.
+
+For money-impacting workflows, AI can prepare context, but deterministic systems and humans must govern approval and execution.
+
+### Product Principle Reinforced
+
+AI prepares context.  
+Policy determines eligibility.  
+Humans approve.  
+Deterministic systems execute.
