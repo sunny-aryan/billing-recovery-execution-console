@@ -11,6 +11,16 @@ import uuid
 from src.cases.case_service import update_case_status
 from src.audit.audit_service import record_audit_event
 from src.database import get_connection
+from src.dependencies.dependency_modes import (
+    DEPENDENCY_MODE_FORCED_MOCK,
+    DEPENDENCY_MODE_LIVE,
+)
+from src.execution.execution_rules import MOCK_BILLING_PROVIDER, STRIPE_TEST_MODE
+from src.providers.stripe_adapter import (
+    build_mock_stripe_refund_lookup,
+    build_stripe_refund_lookup_fallback,
+    lookup_stripe_refund_state,
+)
 from src.execution.execution_rules import (
     CASE_STATUS_NEEDS_MANUAL_REVIEW,
     FAILED_PERMANENT,
@@ -39,13 +49,18 @@ from src.execution.execution_service import (
 from src.providers.mock_billing_adapter import lookup_provider_state
 
 
-def run_reconciliation(execution_request_id, simulated_provider_state=None):
+def run_reconciliation(
+    execution_request_id,
+    simulated_provider_state=None,
+    dependency_mode=None,
+):
     """
     Run reconciliation for an execution request.
 
     Args:
         execution_request_id (str): Execution request identifier.
         simulated_provider_state (str | None): Optional provider lookup override.
+        dependency_mode (str | None): Dependency mode for provider-specific reconciliation.
 
     Returns:
         dict: Stored reconciliation result.
@@ -55,9 +70,10 @@ def run_reconciliation(execution_request_id, simulated_provider_state=None):
     if execution_request is None:
         raise ValueError("Execution request not found.")
 
-    provider_lookup = lookup_provider_state(
+    provider_lookup = _lookup_provider_state_for_reconciliation(
         execution_request=execution_request,
         simulated_provider_state=simulated_provider_state,
+        dependency_mode=dependency_mode,
     )
 
     reconciliation_result = _evaluate_reconciliation(
@@ -171,6 +187,41 @@ def get_reconciliation_runs(execution_request_id):
 
     return [dict(row) for row in rows]
 
+def _lookup_provider_state_for_reconciliation(
+    execution_request,
+    simulated_provider_state,
+    dependency_mode,
+):
+    """
+    Look up provider source-of-truth state for reconciliation.
+
+    Mock provider:
+        Uses deterministic simulated provider lookup.
+
+    Stripe provider:
+        Uses Stripe refund lookup in live mode, mock Stripe lookup in forced mock mode,
+        and safe unknown fallback if lookup fails.
+    """
+    provider = execution_request["provider"]
+
+    if provider == STRIPE_TEST_MODE:
+        if dependency_mode == DEPENDENCY_MODE_FORCED_MOCK:
+            return build_mock_stripe_refund_lookup(execution_request)
+
+        if dependency_mode == DEPENDENCY_MODE_LIVE:
+            try:
+                return lookup_stripe_refund_state(execution_request)
+            except Exception as error:
+                return build_stripe_refund_lookup_fallback(error)
+
+        return build_stripe_refund_lookup_fallback(
+            ValueError(f"Unsupported Stripe reconciliation mode: {dependency_mode}")
+        )
+
+    return lookup_provider_state(
+        execution_request=execution_request,
+        simulated_provider_state=simulated_provider_state,
+    )
 
 def _evaluate_reconciliation(execution_request, provider_lookup):
     """

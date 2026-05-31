@@ -55,6 +55,7 @@ from src.execution.execution_rules import (
     SUCCEEDED,
     CASE_STATUS_RECONCILED,
     RECONCILED,
+    STRIPE_TEST_MODE,
 )
 from src.execution.idempotency import generate_idempotency_key
 from src.execution.retry_policy import evaluate_retry_eligibility
@@ -633,8 +634,9 @@ def _run_stripe_refund_attempt(
     """
     execution_request_id = execution_request["execution_request_id"]
 
-    _update_execution_request_status(
+    _update_execution_request_provider_and_status(
         execution_request_id=execution_request_id,
+        provider=STRIPE_TEST_MODE,
         status=PROCESSING,
     )
     update_case_status(execution_request["case_id"], CASE_STATUS_PROCESSING)
@@ -649,7 +651,7 @@ def _run_stripe_refund_attempt(
         "amount_cents": execution_request["approved_amount_cents"],
         "currency": execution_request["currency"],
         "idempotency_key": execution_request["idempotency_key"],
-        "provider": "stripe_test_mode",
+        "provider": STRIPE_TEST_MODE,
         "dependency_mode": dependency_mode,
         "payment_intent_id": stripe_test_payment["payment_intent_id"],
         "charge_id": stripe_test_payment["charge_id"],
@@ -684,7 +686,7 @@ def _run_stripe_refund_attempt(
         attempt_id=attempt_id,
         execution_request_id=execution_request_id,
         attempt_number=attempt_number,
-        provider="stripe_test_mode",
+        provider=STRIPE_TEST_MODE,
         request_payload=request_payload,
         provider_response=provider_response,
     )
@@ -695,7 +697,7 @@ def _run_stripe_refund_attempt(
         entity_id=attempt_id,
         event_type="stripe_refund_attempt_recorded",
         actor_type="provider",
-        actor_name="stripe_test_mode",
+        actor_name=STRIPE_TEST_MODE,
         details={
             "execution_request_id": execution_request_id,
             "attempt_number": attempt_number,
@@ -855,6 +857,34 @@ def _store_execution_attempt(
     conn.commit()
     conn.close()
 
+def _update_execution_request_provider_and_status(
+    execution_request_id,
+    provider,
+    status,
+):
+    """
+    Update execution request provider and status.
+
+    This is used when the user chooses a provider execution path after the
+    execution request has already been created.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE execution_requests
+        SET
+            provider = ?,
+            status = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE execution_request_id = ?
+        """,
+        (provider, status, execution_request_id),
+    )
+
+    conn.commit()
+    conn.close()
 
 def _update_execution_request_status(
     execution_request_id,

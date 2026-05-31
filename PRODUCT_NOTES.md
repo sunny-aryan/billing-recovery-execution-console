@@ -522,3 +522,26 @@ The key product boundary is:
 
 > Stripe performs the external refund, but the internal execution service governs when and how the refund is attempted.
 
+## Commit 18 Product Decision: Stripe Refund Reconciliation
+
+Commit 18 adds Stripe refund reconciliation.
+
+This completes the real external API loop:
+
+Stripe test payment  
+→ Stripe refund execution  
+→ Stripe refund ID stored  
+→ Stripe refund retrieved  
+→ internal state reconciled
+
+The system supports:
+
+- live Stripe refund lookup
+- forced mock refund lookup
+- safe fallback when Stripe lookup fails
+- routing unknown provider state to manual review
+
+The key product boundary is:
+
+> The provider write creates the external object. Reconciliation verifies that the provider object still matches internal state.
+

@@ -509,3 +509,29 @@ That would collapse approval and execution into one step and would weaken retry,
 Human approval authorizes the correction.  
 The execution request makes it durable.  
 The provider adapter performs the external write.
+
+## Commit 18: Stripe reconciliation after Stripe refund execution
+
+### Decision
+
+The project adds Stripe refund reconciliation after Stripe refund execution.
+
+### Why
+
+A refund is not complete simply because the internal system marked the execution as succeeded.
+
+The system should verify that the external provider still agrees with the internal state by retrieving the Stripe refund status.
+
+### Alternative Considered
+
+Trust the original Stripe refund creation response permanently.
+
+### Why Rejected
+
+Provider state can be incomplete, delayed, or misunderstood by internal systems.
+
+A reliable execution workflow should have a verification step that compares internal state against provider source of truth.
+
+### Product Principle Reinforced
+
+External execution is complete only after provider state is verified.

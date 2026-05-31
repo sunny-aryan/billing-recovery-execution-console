@@ -1,5 +1,9 @@
 import streamlit as st
 
+from src.dependencies.dependency_modes import get_mode_label
+from src.dependencies.dependency_state import get_stripe_mode
+from src.execution.execution_rules import STRIPE_TEST_MODE
+
 from src.execution.execution_rules import (
     PROVIDER_NOT_FOUND,
     PROVIDER_SUCCEEDED,
@@ -29,27 +33,37 @@ def render_reconciliation_panel(execution_request):
         st.info("Create an execution request before running reconciliation.")
         return
 
-    provider_state_options = [
-        "use_default_provider_lookup",
-        PROVIDER_SUCCEEDED,
-        PROVIDER_NOT_FOUND,
-        PROVIDER_UNKNOWN,
-    ]
-
-    selected_provider_state = st.selectbox(
-        "Simulated provider source-of-truth state",
-        options=provider_state_options,
-        key=f"reconciliation_provider_state_{execution_request['execution_request_id']}",
-        help=(
-            "Use the default lookup for normal testing, or override provider state "
-            "to demonstrate mismatch scenarios."
-        ),
-    )
-
     simulated_provider_state = None
+    stripe_mode = get_stripe_mode()
 
-    if selected_provider_state != "use_default_provider_lookup":
-        simulated_provider_state = selected_provider_state
+    if execution_request["provider"] == STRIPE_TEST_MODE:
+        st.info(f"Stripe reconciliation mode: {get_mode_label(stripe_mode)}")
+
+        st.caption(
+            "Stripe reconciliation retrieves the Stripe refund status in live mode. "
+            "Forced mock mode uses deterministic Stripe refund lookup without calling Stripe."
+        )
+
+    else:
+        provider_state_options = [
+            "use_default_provider_lookup",
+            PROVIDER_SUCCEEDED,
+            PROVIDER_NOT_FOUND,
+            PROVIDER_UNKNOWN,
+        ]
+
+        selected_provider_state = st.selectbox(
+            "Simulated provider source-of-truth state",
+            options=provider_state_options,
+            key=f"reconciliation_provider_state_{execution_request['execution_request_id']}",
+            help=(
+                "Use the default lookup for normal testing, or override provider state "
+                "to demonstrate mismatch scenarios."
+            ),
+        )
+
+        if selected_provider_state != "use_default_provider_lookup":
+            simulated_provider_state = selected_provider_state
 
     if st.button(
         "Run reconciliation",
@@ -59,6 +73,7 @@ def render_reconciliation_panel(execution_request):
             run_reconciliation(
                 execution_request_id=execution_request["execution_request_id"],
                 simulated_provider_state=simulated_provider_state,
+                dependency_mode=stripe_mode,
             )
             st.success("Reconciliation completed.")
             st.rerun()

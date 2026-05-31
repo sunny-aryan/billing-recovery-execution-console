@@ -31,6 +31,7 @@ from src.execution.execution_rules import (
     PROVIDER_FAILED,
     PROVIDER_SUCCEEDED,
     PROVIDER_TIMEOUT,
+    PROVIDER_UNKNOWN,
 )
 from src.providers.base import ProviderAdapter, ProviderRuntimeContext
 
@@ -426,3 +427,100 @@ def _extract_stripe_error_code(error):
         return f"stripe_http_{http_status}"
 
     return error.__class__.__name__
+
+def lookup_stripe_refund_state(execution_request):
+    """
+    Retrieve Stripe refund state from Stripe test mode.
+
+    Args:
+        execution_request (dict): Execution request with provider_object_id = Stripe refund ID.
+
+    Returns:
+        dict: Provider source-of-truth lookup result.
+    """
+    configure_stripe_client()
+
+    refund_id = execution_request["provider_object_id"]
+
+    if not refund_id:
+        raise ValueError("Stripe refund ID is missing from execution request.")
+
+    refund = stripe.Refund.retrieve(refund_id)
+
+    provider_status = _map_stripe_refund_status_to_provider_status(refund.status)
+
+    return {
+        "provider_status": provider_status,
+        "provider_object_id": refund.id,
+        "lookup_payload": {
+            "id": refund.id,
+            "status": refund.status,
+            "payment_intent": getattr(refund, "payment_intent", None),
+            "charge": getattr(refund, "charge", None),
+            "amount_cents": refund.amount,
+            "currency": refund.currency.upper(),
+            "source": "stripe_refund_lookup",
+        },
+    }
+
+
+def build_mock_stripe_refund_lookup(execution_request):
+    """
+    Build deterministic mock Stripe refund lookup response.
+
+    Args:
+        execution_request (dict): Execution request.
+
+    Returns:
+        dict: Provider source-of-truth lookup result.
+    """
+    return {
+        "provider_status": PROVIDER_SUCCEEDED,
+        "provider_object_id": execution_request["provider_object_id"]
+        or f"re_mock_lookup_{execution_request['execution_request_id'].lower()}",
+        "lookup_payload": {
+            "id": execution_request["provider_object_id"]
+            or f"re_mock_lookup_{execution_request['execution_request_id'].lower()}",
+            "status": "succeeded",
+            "source": "mock_stripe_refund_lookup",
+        },
+    }
+
+
+def build_stripe_refund_lookup_fallback(error):
+    """
+    Build safe fallback lookup response when Stripe refund lookup fails.
+
+    Args:
+        error (Exception): Stripe or runtime error.
+
+    Returns:
+        dict: Provider source-of-truth lookup result.
+    """
+    return {
+        "provider_status": PROVIDER_UNKNOWN,
+        "provider_object_id": None,
+        "lookup_payload": {
+            "status": PROVIDER_UNKNOWN,
+            "source": "stripe_refund_lookup_fallback",
+            "error_message": str(error),
+            "error_code": _extract_stripe_error_code(error),
+            "error_type": _classify_stripe_error(error),
+        },
+    }
+
+
+def _map_stripe_refund_status_to_provider_status(stripe_refund_status):
+    """
+    Map Stripe refund status into internal provider status.
+
+    Stripe refund statuses such as succeeded, pending, failed, and canceled need
+    to be normalized for internal reconciliation.
+    """
+    if stripe_refund_status == "succeeded":
+        return PROVIDER_SUCCEEDED
+
+    if stripe_refund_status in ["failed", "canceled"]:
+        return PROVIDER_FAILED
+
+    return PROVIDER_UNKNOWN

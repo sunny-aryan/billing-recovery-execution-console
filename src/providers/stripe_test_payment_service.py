@@ -46,7 +46,10 @@ def create_and_store_stripe_test_payment(case, dependency_mode):
         return existing_payment, False
 
     test_payment_id = f"STP-{uuid.uuid4().hex[:8].upper()}"
-    idempotency_key = _generate_test_payment_idempotency_key(case)
+    idempotency_key = _generate_test_payment_idempotency_key(
+        case=case,
+        test_payment_id=test_payment_id,
+    )
 
     if dependency_mode == DEPENDENCY_MODE_FORCED_MOCK:
         payment_payload = build_mock_test_payment(case)
@@ -218,12 +221,17 @@ def _store_stripe_test_payment(
     }
 
 
-def _generate_test_payment_idempotency_key(case):
+def _generate_test_payment_idempotency_key(case, test_payment_id):
     """
-    Generate deterministic idempotency key for Stripe test payment setup.
+    Generate idempotency key for one local Stripe test payment setup operation.
+
+    The key includes the local stripe_test_payment_id so resetting the local DB
+    and creating a new test payment does not accidentally reuse an old Stripe
+    PaymentIntent from a previous demo run.
     """
     return (
         f"stripe_test_payment:"
+        f"{test_payment_id}:"
         f"{case['case_id']}:"
         f"{case['invoice_id']}:"
         f"{int(case['amount_cents'])}:"

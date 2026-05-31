@@ -94,6 +94,11 @@ The current implementation supports:
 - Stripe refund ID persistence
 - Stripe refund execution attempts
 - Stripe refund audit events
+- Stripe refund reconciliation
+- Stripe refund status lookup
+- forced mock Stripe reconciliation
+- safe fallback when Stripe refund lookup fails
+- reconciliation of Stripe refund ID against internal execution state
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -213,6 +218,18 @@ The refund path supports:
 The execution request idempotency key is passed to Stripe when creating the refund, so retries are protected against duplicate external effects.
 
 The Stripe refund ID is stored as the execution request provider object ID.
+
+## Stripe Refund Reconciliation
+
+The app can reconcile Stripe refund execution against Stripe source of truth.
+
+For Stripe execution requests:
+
+- **Live Stripe mode** retrieves the Stripe refund by refund ID.
+- **Forced mock mode** uses deterministic Stripe refund lookup without calling Stripe.
+- **Fallback behavior** routes unknown lookup failures safely toward manual review.
+
+This verifies that internal execution state matches the provider’s refund state before the case is treated as fully reconciled.
 
 ## AI and Deterministic System Boundary
 
