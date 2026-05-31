@@ -38,6 +38,42 @@ The intended Project 4 signal is:
 
 > This system does not stop at recommending or approving an action. It models how approved actions are safely executed, monitored, retried, reconciled, and recovered.
 
+## Why Billing Recovery?
+
+Billing corrections are a strong domain for this project because they involve:
+
+* real customer impact
+* financial risk
+* duplicate execution risk
+* external provider dependency
+* auditability needs
+* manual recovery when automation is unsafe
+
+This makes the domain well-suited for demonstrating reliable execution after human approval.
+
+## Open Product Questions
+
+* Should the first real external write be a Stripe refund or Stripe credit note?
+* Should retries be manual-triggered in the MVP or simulated as scheduled retries?
+* Which failure mode should be most prominent in the demo?
+* How much accounting or revenue context is needed without expanding scope too far?
+* Should reconciliation repair internal state automatically or require manual confirmation for certain mismatches?
+
+## Non-goals
+
+This project is not intended to become:
+
+* a full subscription billing system
+* a revenue recognition system
+* a general accounting platform
+* a complete Stripe clone
+* a production-grade finance operations tool
+
+The focus is narrower:
+
+> reliable execution lifecycle after human-approved billing correction.
+
+
 ## Commit 1/2 Scope
 
 The first implementation establishes the basic billing recovery workspace:
@@ -356,41 +392,6 @@ deterministic rules → isolated test database → automated test coverage → s
 The key product boundary is:
 
 > External APIs add realism, but tests protect the execution model.
-
-## Why Billing Recovery?
-
-Billing corrections are a strong domain for this project because they involve:
-
-* real customer impact
-* financial risk
-* duplicate execution risk
-* external provider dependency
-* auditability needs
-* manual recovery when automation is unsafe
-
-This makes the domain well-suited for demonstrating reliable execution after human approval.
-
-## Open Product Questions
-
-* Should the first real external write be a Stripe refund or Stripe credit note?
-* Should retries be manual-triggered in the MVP or simulated as scheduled retries?
-* Which failure mode should be most prominent in the demo?
-* How much accounting or revenue context is needed without expanding scope too far?
-* Should reconciliation repair internal state automatically or require manual confirmation for certain mismatches?
-
-## Non-goals
-
-This project is not intended to become:
-
-* a full subscription billing system
-* a revenue recognition system
-* a general accounting platform
-* a complete Stripe clone
-* a production-grade finance operations tool
-
-The focus is narrower:
-
-> reliable execution lifecycle after human-approved billing correction.
 
 
 ## Commit 13 Product Decision: Demo-Safe External Dependency Modes
