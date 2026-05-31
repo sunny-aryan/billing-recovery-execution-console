@@ -1,7 +1,8 @@
+import os
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path("billing_recovery.db")
+DB_PATH = Path(os.getenv("BILLING_RECOVERY_DB_PATH", "billing_recovery.db"))
 
 
 def get_connection():

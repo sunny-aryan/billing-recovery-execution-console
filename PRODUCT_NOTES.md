@@ -325,6 +325,38 @@ The key product boundary is:
 
 > Case workflows help individual operators act. Operations dashboards help teams manage execution reliability at scale.
 
+## Commit 12 Product Decision: Test Execution Reliability Before External Integration
+
+Commit 12 adds automated tests for the deterministic execution workflow.
+
+This is important because the system now includes multiple control layers:
+
+- policy evaluation
+- approval gating
+- execution request creation
+- idempotency
+- provider attempt tracking
+- retry handling
+- reconciliation
+- manual recovery
+- audit logging
+
+Before adding a real external provider, the internal execution model should be tested.
+
+## Commit 12 Workflow Progression
+
+The product now supports both:
+
+execution workflow:  
+policy → approval → execution request → provider attempt → retry → reconciliation → manual recovery → audit
+
+and validation workflow:  
+deterministic rules → isolated test database → automated test coverage → safer future provider integration
+
+The key product boundary is:
+
+> External APIs add realism, but tests protect the execution model.
+
 ## Why Billing Recovery?
 
 Billing corrections are a strong domain for this project because they involve:

@@ -70,6 +70,7 @@ The current implementation supports:
 - manual recovery summary metrics
 - needs-attention queue
 - unreconciled execution queue
+- automated tests for core execution reliability workflows
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -152,6 +153,27 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python3 -m streamlit run app.py
+```
+
+## Automated Tests
+
+The project includes automated tests for core execution reliability logic.
+
+Test coverage includes:
+
+- deterministic policy evaluation
+- idempotency key generation
+- execution request duplicate prevention
+- mock provider execution outcomes
+- retry eligibility and retry attempts
+- reconciliation outcomes and mismatch detection
+- manual recovery validation
+- centralized audit event creation
+
+Run tests locally:
+
+```bash
+pytest
 ```
 
 ## Current Limitations

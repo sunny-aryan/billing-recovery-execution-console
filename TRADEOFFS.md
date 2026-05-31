@@ -332,3 +332,38 @@ For a Senior/Principal PM portfolio signal, it is important to show that executi
 ### Product Principle Reinforced
 
 Reliable execution requires both workflow controls and operational visibility.
+
+## Commit 12: Add tests before real provider integration
+
+### Decision
+
+The project adds automated tests before introducing a real Stripe test-mode adapter.
+
+### Why
+
+The system now contains important deterministic reliability logic:
+
+- policy eligibility
+- approval gating
+- idempotency
+- execution state transitions
+- retry eligibility
+- reconciliation outcomes
+- manual recovery validation
+
+Before adding real provider complexity, these rules should be protected by automated tests.
+
+### Alternative Considered
+
+Move directly to Stripe integration.
+
+### Why Rejected for Now
+
+A real provider adapter would increase external realism, but it would also introduce setup complexity and failure modes unrelated to the internal execution model.
+
+Testing first makes the internal execution system more trustworthy before adding real API writes.
+
+### Product Principle Reinforced
+
+Reliable execution systems need reliable controls.  
+Reliable controls should be tested before they are connected to real external providers.
