@@ -79,6 +79,10 @@ The current implementation supports:
 - forced mock AI brief mode
 - deterministic fallback when OpenAI is unavailable or invalid
 - AI brief audit events
+- Stripe provider adapter foundation
+- Stripe test-mode configuration checks
+- provider adapter boundary for mock and Stripe providers
+- Stripe readiness display without making external API calls
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -114,6 +118,22 @@ Streamlit UI
 → Reconciliation Service
 → SQLite Persistence + Audit Trail
 
+## External Dependency Modes
+
+The app includes dependency mode controls for upcoming OpenAI and Stripe integrations.
+
+Each dependency can be configured independently:
+
+- **Live external API** — use real external API behavior when configured.
+- **Forced mock / demo mode** — avoid external API calls and use deterministic mock behavior.
+
+OpenAI and Stripe are intentionally controlled separately. One dependency may use live mode while the other uses forced mock mode.
+
+This distinction matters because user-selected mock behavior is different from runtime fallback behavior:
+
+- **Forced mock** is a deliberate demo choice.
+- **Fallback** is used when a live dependency call fails and the system must degrade safely.
+
 ## AI Case Brief
 
 The Case Detail page includes an AI Case Brief section before policy evaluation.
@@ -136,21 +156,24 @@ The OpenAI dependency can run in two modes:
 
 If live OpenAI mode fails, the system uses a deterministic fallback brief and records that fallback was used.
 
-## External Dependency Modes
+## Stripe Provider Adapter
 
-The app includes dependency mode controls for upcoming OpenAI and Stripe integrations.
+The project includes a Stripe provider adapter foundation.
 
-Each dependency can be configured independently:
+At this stage, the adapter does not create payments or refunds yet. It only:
 
-- **Live external API** — use real external API behavior when configured.
-- **Forced mock / demo mode** — avoid external API calls and use deterministic mock behavior.
+- validates whether a Stripe test-mode secret key is configured
+- confirms that live Stripe behavior requires a key starting with `sk_test_`
+- exposes provider readiness in the UI
+- preserves the provider boundary used by future refund execution and reconciliation
 
-OpenAI and Stripe are intentionally controlled separately. One dependency may use live mode while the other uses forced mock mode.
+Stripe is intentionally controlled separately from OpenAI. Stripe can be in live test mode while OpenAI is mocked, or vice versa.
 
-This distinction matters because user-selected mock behavior is different from runtime fallback behavior:
+Future commits will add:
 
-- **Forced mock** is a deliberate demo choice.
-- **Fallback** is used when a live dependency call fails and the system must degrade safely.
+- Stripe test payment setup
+- Stripe test-mode refund execution
+- Stripe refund reconciliation
 
 ## AI and Deterministic System Boundary
 

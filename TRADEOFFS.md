@@ -428,3 +428,29 @@ AI prepares context.
 Policy determines eligibility.  
 Humans approve.  
 Deterministic systems execute.
+
+## Commit 15: Stripe provider adapter foundation before payment execution
+
+### Decision
+
+The project adds a Stripe provider adapter foundation before creating test payments or refunds.
+
+### Why
+
+A reliable execution system should not couple the execution service directly to one external provider SDK.
+
+This commit establishes Stripe as a provider behind an adapter boundary while keeping mock provider behavior available for deterministic failure-mode demos.
+
+### Alternative Considered
+
+Add Stripe refund execution directly inside the execution service.
+
+### Why Rejected
+
+That would blur internal execution logic with provider-specific API details.
+
+The execution service should manage lifecycle state, idempotency, attempts, retries, reconciliation, and audit. Provider adapters should handle provider-specific calls.
+
+### Product Principle Reinforced
+
+External provider realism should be added behind stable internal execution boundaries.

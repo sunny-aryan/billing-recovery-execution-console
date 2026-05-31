@@ -1,5 +1,6 @@
 import streamlit as st
 
+from src.providers.stripe_adapter import build_stripe_runtime_context
 from src.dependencies.dependency_modes import (
     DEPENDENCY_MODE_FORCED_MOCK,
     DEPENDENCY_MODE_LIVE,
@@ -57,6 +58,7 @@ def render_dependency_status_summary():
     """
     openai_mode = get_openai_mode()
     stripe_mode = get_stripe_mode()
+    stripe_context = build_stripe_runtime_context(stripe_mode)
 
     col_1, col_2 = st.columns(2)
 
@@ -67,9 +69,25 @@ def render_dependency_status_summary():
         st.metric("Stripe mode", get_mode_label(stripe_mode))
 
     st.caption(
-        "These are user-selected modes. Runtime fallbacks will be dependency-specific "
-        "when OpenAI and Stripe live calls are added."
+        "These are user-selected modes. Runtime fallbacks are dependency-specific."
     )
+
+    with st.expander("Stripe provider readiness", expanded=False):
+        st.write("**Runtime result**")
+        st.write(stripe_context.runtime_result)
+
+        st.write("**Source**")
+        st.write(stripe_context.source)
+
+        st.write("**Configured**")
+        st.write("Yes" if stripe_context.is_configured else "No")
+
+        st.write("**Message**")
+        st.write(stripe_context.message)
+
+        if stripe_context.error_message:
+            st.write("**Configuration issue**")
+            st.warning(stripe_context.error_message)
 
 
 def _get_mode_index(mode):

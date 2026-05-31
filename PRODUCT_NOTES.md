@@ -458,3 +458,22 @@ The key product boundary is:
 
 > AI helps reviewers understand the case, but it does not control the money-impacting workflow.
 
+## Commit 15 Product Decision: Stripe Behind a Provider Boundary
+
+Commit 15 adds the Stripe provider adapter foundation.
+
+This is intentionally done before Stripe test payment setup or refund execution.
+
+The product now distinguishes:
+
+- internal execution lifecycle
+- provider adapter boundary
+- mock provider for deterministic failure scenarios
+- Stripe test-mode provider for real external API realism
+
+This prepares the project to add real Stripe refund execution without weakening the internal reliability model.
+
+The key product boundary is:
+
+> Execution services own workflow state. Provider adapters own external API behavior.
+
