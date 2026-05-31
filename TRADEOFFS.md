@@ -1,5 +1,9 @@
 # Trade-offs
 
+This document captures key product and system design decisions made while building the Billing Recovery Execution Console.
+
+The project intentionally prioritizes execution reliability, auditability, and operational recovery over breadth of billing features.
+
 ## Commit 1 and 2: Start with workflow foundation before external API integration
 
 
@@ -585,3 +589,16 @@ A portfolio reviewer may not read the full codebase or every markdown file. Visu
 ### Product Principle Reinforced
 
 Strong systems should be explainable visually, not only through code.
+
+## Final Design Position
+
+The final system intentionally separates:
+
+- AI assistance from deterministic policy
+- approval from execution
+- execution request from provider attempt
+- provider write from reconciliation
+- reconciliation from manual recovery
+- workflow state from audit trail
+
+This separation increases implementation complexity, but it makes the system safer, easier to debug, and more realistic for money-impacting operations.

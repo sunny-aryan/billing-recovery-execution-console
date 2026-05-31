@@ -2,9 +2,28 @@
 
 A portfolio project demonstrating how a billing operations system can move from human-approved billing corrections to reliable execution, retry handling, reconciliation, and manual recovery.
 
+## One-Sentence Summary
+
+A billing operations execution console that turns human-approved billing corrections into durable, idempotent provider execution requests with Stripe test-mode refunds, retry handling, reconciliation, manual recovery, auditability, and operational visibility.
+
+
 ## Product Thesis
 
-Billing corrections are not complete when a human approves them. They are complete only when the approved action is safely executed, verified against the external billing provider, reconciled with internal state, and recoverable when execution fails.
+Money-impacting operational workflows should not jump directly from human approval to external execution.
+
+A reliable execution system needs a controlled lifecycle:
+
+1. prepare context
+2. evaluate deterministic policy
+3. capture human approval
+4. create a durable execution request
+5. execute through a provider adapter
+6. retry only when safe
+7. reconcile against provider source of truth
+8. route unresolved cases to manual recovery
+9. preserve a complete audit trail
+
+This project models that lifecycle through a working Streamlit + SQLite system with OpenAI-assisted case briefing and Stripe test-mode refund execution.
 
 ## Why This Project Exists
 
@@ -23,6 +42,68 @@ This project focuses on the next progression:
 
 The goal is to model what happens when an approved operational decision must become a safe, durable, auditable action against an external system.
 
+## What This Project Demonstrates
+
+This project is designed to demonstrate Senior / Principal Technical Product Management judgment across:
+
+- execution reliability after human approval
+- provider adapter design
+- idempotency and duplicate prevention
+- external API integration with Stripe test mode
+- AI assistance with deterministic workflow boundaries
+- retry eligibility and failure classification
+- reconciliation against provider source of truth
+- manual recovery for unresolved states
+- auditability for money-impacting operations
+- operational visibility through dashboard metrics
+- realistic degraded-mode and forced-mock behavior
+
+
+## Target Users
+
+| User               | Responsibility                                                            |
+| ------------------ | ------------------------------------------------------------------------- |
+| Billing Ops Agent  | Reviews billing correction cases and prepares them for approval           |
+| Finance Manager    | Approves or rejects money-impacting corrections                           |
+| Execution Operator | Monitors failed executions, retries, and recovery paths                   |
+| RevOps Lead        | Tracks operational health, execution reliability, and reconciliation gaps |
+
+
+## Intended Workflow
+
+Billing issue
+→ human review
+→ approval
+→ execution request
+→ external provider write
+→ success / failure / timeout
+→ retry / reconciliation
+→ manual recovery if needed
+→ audit trail
+
+# Example Workflow Walkthrough
+
+### Happy Path: Stripe Refund Execution and Reconciliation
+
+1. Operator selects a billing case from the work queue.
+2. Optional AI case brief summarizes the issue, customer impact, missing evidence, and risk notes.
+3. Deterministic policy evaluation determines whether the correction can proceed.
+4. Human reviewer approves the correction and records rationale.
+5. Stripe test payment setup prepares a refundable test payment.
+6. Execution request creates a durable internal command with an idempotency key.
+7. Provider execution creates a Stripe test-mode refund or uses forced mock mode.
+8. Execution attempt records provider response, refund ID, and error details if any.
+9. Reconciliation verifies the provider refund state.
+10. Audit trail records the end-to-end lifecycle.
+
+### Failure / Recovery Path: Timeout or Unknown Provider State
+
+1. Provider execution returns a timeout or unknown state.
+2. The execution request moves to `needs_manual_review`.
+3. Reconciliation checks provider source of truth.
+4. If the provider state remains unknown or mismatched, the case is routed to manual recovery.
+5. Operator records the recovery action, rationale, and optional provider reference.
+6. Audit trail preserves the recovery decision.
 
 ## System Architecture
 
@@ -127,29 +208,159 @@ flowchart LR
     Reconciliation --> ManualReview[Needs Manual Review]
 ```
 
-## Example Workflow Walkthrough
+## External API Strategy
 
-### Happy Path: Stripe Refund Execution and Reconciliation
+The project uses two external integrations for different product purposes:
 
-1. Operator selects a billing case from the work queue.
-2. Optional AI case brief summarizes the issue, customer impact, missing evidence, and risk notes.
-3. Deterministic policy evaluation determines whether the correction can proceed.
-4. Human reviewer approves the correction and records rationale.
-5. Stripe test payment setup prepares a refundable test payment.
-6. Execution request creates a durable internal command with an idempotency key.
-7. Provider execution creates a Stripe test-mode refund or uses forced mock mode.
-8. Execution attempt records provider response, refund ID, and error details if any.
-9. Reconciliation verifies the provider refund state.
-10. Audit trail records the end-to-end lifecycle.
+| Integration | Purpose | Boundary |
+|---|---|---|
+| OpenAI | Summarize billing context and prepare reviewer brief | Advisory only; never approves or executes |
+| Stripe test mode | Execute and reconcile a real test-mode refund | Provider write boundary after human approval and execution request creation |
 
-### Failure / Recovery Path: Timeout or Unknown Provider State
+Both integrations support forced mock mode so the app remains demo-friendly without external API calls.
 
-1. Provider execution returns a timeout or unknown state.
-2. The execution request moves to `needs_manual_review`.
-3. Reconciliation checks provider source of truth.
-4. If the provider state remains unknown or mismatched, the case is routed to manual recovery.
-5. Operator records the recovery action, rationale, and optional provider reference.
-6. Audit trail preserves the recovery decision.
+Live API failures are handled through dependency-specific fallback behavior rather than a single global fallback flag.
+
+## External Dependency Modes
+
+```mermaid
+flowchart TD
+    DependencyControls[Sidebar Dependency Controls]
+
+    DependencyControls --> OpenAIMode{OpenAI Mode}
+    DependencyControls --> StripeMode{Stripe Mode}
+
+    OpenAIMode --> OpenAILive[Live OpenAI API]
+    OpenAIMode --> OpenAIMock[Forced Mock AI Brief]
+    OpenAILive --> OpenAISuccess[Live Success]
+    OpenAILive --> OpenAIFallback[Deterministic Fallback]
+
+    StripeMode --> StripeLive[Live Stripe Test Mode]
+    StripeMode --> StripeMock[Forced Mock Provider]
+    StripeLive --> StripeSuccess[Live Stripe Success]
+    StripeLive --> StripeFallback[Safe Failure / Fallback]
+    StripeMock --> MockExecution[Deterministic Demo Path]
+
+    OpenAISuccess --> CaseBrief[AI Case Brief]
+    OpenAIMock --> CaseBrief
+    OpenAIFallback --> CaseBrief
+
+    StripeSuccess --> ExecutionAttempt[Execution Attempt]
+    StripeFallback --> ExecutionAttempt
+    MockExecution --> ExecutionAttempt
+```
+
+The app includes dependency mode controls for upcoming OpenAI and Stripe integrations.
+
+The app separates deliberate demo behavior from runtime failure handling.
+
+Each dependency can be configured independently:
+
+- **Live external API** — use real external API behavior when configured.
+- **Forced mock / demo mode** — avoid external API calls and use deterministic mock behavior.
+
+| Concept | Meaning |
+|---|---|
+| Forced mock | User-selected mode that avoids external API calls |
+| Live external API | Uses configured OpenAI or Stripe credentials |
+| Fallback | Runtime recovery path when a live dependency call fails |
+
+OpenAI and Stripe are controlled independently. For example, OpenAI can run in forced mock mode while Stripe uses live test mode, or vice versa.
+
+
+## AI Case Brief
+
+The Case Detail page includes an AI Case Brief section before policy evaluation.
+
+The brief can include:
+
+- case summary
+- customer impact
+- missing evidence
+- risk notes
+- suggested reviewer questions
+- customer message draft
+
+The AI brief is advisory only. It does not approve, reject, execute, retry, reconcile, or override deterministic policy.
+
+The OpenAI dependency can run in two modes:
+
+- **Live external API** — calls OpenAI using `OPENAI_API_KEY`
+- **Forced mock / demo mode** — returns a deterministic mock brief without making an external API call
+
+If live OpenAI mode fails, the system uses a deterministic fallback brief and records that fallback was used.
+
+## Stripe Provider Adapter
+
+The project includes a Stripe provider adapter foundation.
+
+At this stage, the adapter does not create payments or refunds yet. It only:
+
+- validates whether a Stripe test-mode secret key is configured
+- confirms that live Stripe behavior requires a key starting with `sk_test_`
+- exposes provider readiness in the UI
+- preserves the provider boundary used by future refund execution and reconciliation
+
+Stripe is intentionally controlled separately from OpenAI. Stripe can be in live test mode while OpenAI is mocked, or vice versa.
+
+Future commits will add:
+
+- Stripe test payment setup
+- Stripe test-mode refund execution
+- Stripe refund reconciliation
+
+## Stripe Test Payment Setup
+
+The app can prepare a refundable Stripe test payment for a billing correction case.
+
+Depending on the selected Stripe dependency mode:
+
+- **Live external API** creates a real Stripe test-mode PaymentIntent using the configured `STRIPE_SECRET_KEY`.
+- **Forced mock / demo mode** creates deterministic mock payment metadata without calling Stripe.
+- **Fallback** creates deterministic fallback metadata if live Stripe setup fails.
+
+This setup step does not issue a refund. It only prepares the external payment object that a later refund execution can reference.
+
+Stripe test payment setup prepares the external test object. The execution request represents the system’s durable command after human approval. Provider execution is the actual Stripe refund write performed against that command. Separating these steps makes the workflow retryable, auditable, and easier to reconcile.
+
+## Stripe Refund Execution
+
+The app can execute a Stripe test-mode refund from an approved execution request.
+
+The refund path supports:
+
+- **Live Stripe test mode** — creates a real Stripe refund using the configured `STRIPE_SECRET_KEY`
+- **Forced mock mode** — simulates a Stripe refund without making an external API call
+- **Fallback behavior** — safely classifies Stripe execution failures without crashing the workflow
+
+The execution request idempotency key is passed to Stripe when creating the refund, so retries are protected against duplicate external effects.
+
+The Stripe refund ID is stored as the execution request provider object ID.
+
+## Idempotency Strategy
+
+The project uses different idempotency scopes for different operations.
+
+| Operation | Idempotency Scope | Reason |
+|---|---|---|
+| Stripe test payment setup | Unique per local test payment setup run | A fresh demo run should create a fresh refundable test payment |
+| Execution request creation | One execution request per approval | Prevents duplicate internal execution commands |
+| Stripe refund execution | Stable per execution request | Retrying the same refund should not create duplicate refunds |
+
+This distinction matters because overly broad idempotency keys can accidentally reuse stale provider objects, while overly narrow keys can allow duplicate money-impacting actions.
+
+## Stripe Refund Reconciliation
+
+The app can reconcile Stripe refund execution against Stripe source of truth.
+
+For Stripe execution requests:
+
+- **Live Stripe mode** retrieves the Stripe refund by refund ID.
+- **Forced mock mode** uses deterministic Stripe refund lookup without calling Stripe.
+- **Fallback behavior** routes unknown lookup failures safely toward manual review.
+
+This verifies that internal execution state matches the provider’s refund state before the case is treated as fully reconciled.
+
 
 ## Screenshots
 
@@ -293,28 +504,6 @@ The current implementation supports:
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
 
-
-## Target Users
-
-| User               | Responsibility                                                            |
-| ------------------ | ------------------------------------------------------------------------- |
-| Billing Ops Agent  | Reviews billing correction cases and prepares them for approval           |
-| Finance Manager    | Approves or rejects money-impacting corrections                           |
-| Execution Operator | Monitors failed executions, retries, and recovery paths                   |
-| RevOps Lead        | Tracks operational health, execution reliability, and reconciliation gaps |
-
-## Intended Workflow
-
-Billing issue
-→ human review
-→ approval
-→ execution request
-→ external provider write
-→ success / failure / timeout
-→ retry / reconciliation
-→ manual recovery if needed
-→ audit trail
-
 ## Architecture Direction
 
 Streamlit UI
@@ -325,48 +514,6 @@ Streamlit UI
 → Reconciliation Service
 → SQLite Persistence + Audit Trail
 
-## External Dependency Modes
-
-```mermaid
-flowchart TD
-    DependencyControls[Sidebar Dependency Controls]
-
-    DependencyControls --> OpenAIMode{OpenAI Mode}
-    DependencyControls --> StripeMode{Stripe Mode}
-
-    OpenAIMode --> OpenAILive[Live OpenAI API]
-    OpenAIMode --> OpenAIMock[Forced Mock AI Brief]
-    OpenAILive --> OpenAISuccess[Live Success]
-    OpenAILive --> OpenAIFallback[Deterministic Fallback]
-
-    StripeMode --> StripeLive[Live Stripe Test Mode]
-    StripeMode --> StripeMock[Forced Mock Provider]
-    StripeLive --> StripeSuccess[Live Stripe Success]
-    StripeLive --> StripeFallback[Safe Failure / Fallback]
-    StripeMock --> MockExecution[Deterministic Demo Path]
-
-    OpenAISuccess --> CaseBrief[AI Case Brief]
-    OpenAIMock --> CaseBrief
-    OpenAIFallback --> CaseBrief
-
-    StripeSuccess --> ExecutionAttempt[Execution Attempt]
-    StripeFallback --> ExecutionAttempt
-    MockExecution --> ExecutionAttempt
-```
-
-The app includes dependency mode controls for upcoming OpenAI and Stripe integrations.
-
-Each dependency can be configured independently:
-
-- **Live external API** — use real external API behavior when configured.
-- **Forced mock / demo mode** — avoid external API calls and use deterministic mock behavior.
-
-OpenAI and Stripe are intentionally controlled separately. One dependency may use live mode while the other uses forced mock mode.
-
-This distinction matters because user-selected mock behavior is different from runtime fallback behavior:
-
-- **Forced mock** is a deliberate demo choice.
-- **Fallback** is used when a live dependency call fails and the system must degrade safely.
 
 ## Reliability Control Model
 
@@ -395,86 +542,6 @@ flowchart TD
 
 AI assists. Deterministic systems govern. Humans approve. Execution is auditable.
 
-## AI Case Brief
-
-The Case Detail page includes an AI Case Brief section before policy evaluation.
-
-The brief can include:
-
-- case summary
-- customer impact
-- missing evidence
-- risk notes
-- suggested reviewer questions
-- customer message draft
-
-The AI brief is advisory only. It does not approve, reject, execute, retry, reconcile, or override deterministic policy.
-
-The OpenAI dependency can run in two modes:
-
-- **Live external API** — calls OpenAI using `OPENAI_API_KEY`
-- **Forced mock / demo mode** — returns a deterministic mock brief without making an external API call
-
-If live OpenAI mode fails, the system uses a deterministic fallback brief and records that fallback was used.
-
-## Stripe Provider Adapter
-
-The project includes a Stripe provider adapter foundation.
-
-At this stage, the adapter does not create payments or refunds yet. It only:
-
-- validates whether a Stripe test-mode secret key is configured
-- confirms that live Stripe behavior requires a key starting with `sk_test_`
-- exposes provider readiness in the UI
-- preserves the provider boundary used by future refund execution and reconciliation
-
-Stripe is intentionally controlled separately from OpenAI. Stripe can be in live test mode while OpenAI is mocked, or vice versa.
-
-Future commits will add:
-
-- Stripe test payment setup
-- Stripe test-mode refund execution
-- Stripe refund reconciliation
-
-## Stripe Test Payment Setup
-
-The app can prepare a refundable Stripe test payment for a billing correction case.
-
-Depending on the selected Stripe dependency mode:
-
-- **Live external API** creates a real Stripe test-mode PaymentIntent using the configured `STRIPE_SECRET_KEY`.
-- **Forced mock / demo mode** creates deterministic mock payment metadata without calling Stripe.
-- **Fallback** creates deterministic fallback metadata if live Stripe setup fails.
-
-This setup step does not issue a refund. It only prepares the external payment object that a later refund execution can reference.
-
-Stripe test payment setup prepares the external test object. The execution request represents the system’s durable command after human approval. Provider execution is the actual Stripe refund write performed against that command. Separating these steps makes the workflow retryable, auditable, and easier to reconcile.
-
-## Stripe Refund Execution
-
-The app can execute a Stripe test-mode refund from an approved execution request.
-
-The refund path supports:
-
-- **Live Stripe test mode** — creates a real Stripe refund using the configured `STRIPE_SECRET_KEY`
-- **Forced mock mode** — simulates a Stripe refund without making an external API call
-- **Fallback behavior** — safely classifies Stripe execution failures without crashing the workflow
-
-The execution request idempotency key is passed to Stripe when creating the refund, so retries are protected against duplicate external effects.
-
-The Stripe refund ID is stored as the execution request provider object ID.
-
-## Stripe Refund Reconciliation
-
-The app can reconcile Stripe refund execution against Stripe source of truth.
-
-For Stripe execution requests:
-
-- **Live Stripe mode** retrieves the Stripe refund by refund ID.
-- **Forced mock mode** uses deterministic Stripe refund lookup without calling Stripe.
-- **Fallback behavior** routes unknown lookup failures safely toward manual review.
-
-This verifies that internal execution state matches the provider’s refund state before the case is treated as fully reconciled.
 
 ## AI and Deterministic System Boundary
 
@@ -542,6 +609,7 @@ These cases are designed to support future policy, approval, execution, and reco
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env
 python3 -m streamlit run app.py
 ```
 
@@ -551,14 +619,20 @@ The project includes automated tests for core execution reliability logic.
 
 Test coverage includes:
 
-- deterministic policy evaluation
-- idempotency key generation
+- policy evaluation
+- idempotency generation
+- approval gating
 - execution request duplicate prevention
-- mock provider execution outcomes
-- retry eligibility and retry attempts
-- reconciliation outcomes and mismatch detection
+- mock provider execution
+- retry policy
+- reconciliation outcomes
 - manual recovery validation
-- centralized audit event creation
+- audit event creation
+- OpenAI forced mock and fallback behavior
+- Stripe adapter configuration
+- Stripe test payment setup
+- Stripe refund execution
+- Stripe refund reconciliation
 
 Run tests locally:
 
@@ -566,30 +640,30 @@ Run tests locally:
 pytest
 ```
 
-## Current Limitations
+## Known Limitations
 
-The current version does not yet include:
+This is a portfolio prototype, not a production billing system.
 
-- real Stripe test-mode execution
-- background scheduled retries
-- provider webhooks
-- production-grade permissions
-- production observability
+Current limitations include:
 
-These are planned for upcoming commits.
+- no authentication or role-based access control
+- no background workers for scheduled retries or reconciliation
+- no Stripe webhooks
+- no production ledger or accounting system integration
+- no real customer notification channel
+- no production observability stack
+- synthetic billing cases rather than real customer data
+- Streamlit UI optimized for clarity over production-grade design
 
 ## Future Improvements
 
-Planned future improvements include:
+Potential next steps:
 
-* approval workflow with approver rationale
-* deterministic policy engine
-* durable execution request model
-* idempotency key generation
-* mock billing provider adapter with controlled failure modes
-* Stripe test-mode adapter
-* retry handling for transient failures
-* manual recovery queue
-* reconciliation dashboard
-* execution attempt audit trail
-* operational metrics dashboard
+- add Stripe webhooks for asynchronous refund status updates
+- add scheduled reconciliation jobs
+- add role-based access control for reviewer, supervisor, and admin roles
+- add ledger/accounting export after refund execution
+- add customer notification drafts after execution or manual recovery
+- add production observability with structured logs and traces
+- add provider abstraction for additional billing providers
+- add richer SLA and workload analytics in the operations dashboard
