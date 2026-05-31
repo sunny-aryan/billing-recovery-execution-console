@@ -367,3 +367,35 @@ Testing first makes the internal execution system more trustworthy before adding
 
 Reliable execution systems need reliable controls.  
 Reliable controls should be tested before they are connected to real external providers.
+
+## Commit 13: External dependency modes before external API integration
+
+### Decision
+
+The project adds dependency mode controls before implementing OpenAI or Stripe calls.
+
+Each external dependency can be independently configured as:
+
+- live external API
+- forced mock / demo mode
+
+### Why
+
+The project should be demo-friendly and resilient. Reviewers should be able to run the workflow without needing external API calls in every demo situation.
+
+This also separates two important concepts:
+
+- forced mock behavior, which is a deliberate user-selected demo mode
+- fallback behavior, which happens when a live dependency call fails
+
+### Alternative Considered
+
+Add OpenAI and Stripe calls directly without mode controls.
+
+### Why Rejected
+
+That would make the app brittle during demos and would hide an important product concern: external dependencies are not always available or desirable to call.
+
+### Product Principle Reinforced
+
+External integrations should improve realism without making the core workflow fragile.

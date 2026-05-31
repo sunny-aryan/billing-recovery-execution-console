@@ -393,3 +393,29 @@ The focus is narrower:
 > reliable execution lifecycle after human-approved billing correction.
 
 
+## Commit 13 Product Decision: Demo-Safe External Dependency Modes
+
+Commit 13 adds external dependency mode controls for OpenAI and Stripe before either live integration is implemented.
+
+This is important because the product needs to support two modes of operation:
+
+- real external API behavior for realism
+- forced mock behavior for stable demos and offline review
+
+OpenAI and Stripe are controlled independently because one dependency can fail or be mocked while the other remains live.
+
+The key product distinction is:
+
+> Forced mock is a deliberate demo choice. Fallback is a runtime recovery path after a live dependency fails.
+
+## Commit 13 Workflow Progression
+
+The product now prepares for external realism without making the workflow brittle.
+
+Upcoming commits will use these controls for:
+
+- OpenAI billing case brief generation
+- Stripe test payment setup
+- Stripe refund execution
+- Stripe refund reconciliation
+

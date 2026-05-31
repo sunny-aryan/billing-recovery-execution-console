@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.cases.case_service import format_amount
+from src.ui.dependency_controls import render_dependency_status_summary
 from src.ui.audit_panel import render_audit_panel
 from src.execution.execution_service import get_latest_execution_request
 from src.ui.approval_panel import render_approval_panel
@@ -38,6 +39,9 @@ def render_case_detail(case):
 
     with metric_col_3:
         st.metric("Status", case["status"])
+
+    with st.expander("External dependency mode summary", expanded=False):
+        render_dependency_status_summary()
 
     st.divider()
 

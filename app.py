@@ -1,6 +1,11 @@
 import streamlit as st
 
 from src.database import initialize_database
+from src.dependencies.dependency_state import initialize_dependency_modes
+from src.ui.dependency_controls import (
+    render_dependency_controls,
+    render_dependency_status_summary,
+)
 from src.ui.ops_dashboard import render_ops_dashboard
 from src.seed import seed_database
 from src.cases.case_service import get_all_cases, get_case_by_id
@@ -17,13 +22,14 @@ st.set_page_config(
 
 def initialize_app():
     """
-    Initialize local persistence and seed synthetic billing cases.
+    Initialize local persistence, seed synthetic billing cases, and initialize demo dependency modes.
 
     SQLite creates billing_recovery.db automatically if it does not exist.
     Seed data is inserted only when the billing_cases table is empty.
     """
     initialize_database()
     seed_database()
+    initialize_dependency_modes()
 
 
 def render_about_page():
@@ -94,6 +100,22 @@ Billing issue
         """
     )
 
+    st.subheader("External dependency modes")
+
+    st.markdown(
+        """
+        The app supports demo-safe dependency modes for upcoming OpenAI and Stripe integrations.
+
+        - **Live external API:** use real external API behavior when configured.
+        - **Forced mock / demo mode:** avoid external API calls and use deterministic mock behavior.
+
+        Runtime fallbacks will be implemented separately for each dependency:
+        OpenAI fallback for summary generation, and Stripe fallback for payment/refund execution.
+        """
+    )
+
+    render_dependency_status_summary()    
+
 
 def main():
     initialize_app()
@@ -119,6 +141,9 @@ def main():
         st.caption(
             "Cross the execution boundary: approval → execution → retry → reconciliation → recovery."
         )
+
+        st.divider()
+        render_dependency_controls()        
 
     if page == "Work Queue":
         selected_case_id = render_queue_view(cases_df)

@@ -71,6 +71,9 @@ The current implementation supports:
 - needs-attention queue
 - unreconciled execution queue
 - automated tests for core execution reliability workflows
+- external dependency mode controls for OpenAI and Stripe
+- demo-safe forced mock mode for upcoming external API integrations
+- separate OpenAI and Stripe dependency modes
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -105,6 +108,22 @@ Streamlit UI
 → Billing Provider Adapter
 → Reconciliation Service
 → SQLite Persistence + Audit Trail
+
+## External Dependency Modes
+
+The app includes dependency mode controls for upcoming OpenAI and Stripe integrations.
+
+Each dependency can be configured independently:
+
+- **Live external API** — use real external API behavior when configured.
+- **Forced mock / demo mode** — avoid external API calls and use deterministic mock behavior.
+
+OpenAI and Stripe are intentionally controlled separately. One dependency may use live mode while the other uses forced mock mode.
+
+This distinction matters because user-selected mock behavior is different from runtime fallback behavior:
+
+- **Forced mock** is a deliberate demo choice.
+- **Fallback** is used when a live dependency call fails and the system must degrade safely.
 
 ## AI and Deterministic System Boundary
 
