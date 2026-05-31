@@ -561,3 +561,35 @@ The key product boundary is:
 
 > Backend reliability is not enough. Operators need legible workflow state to act safely.
 
+
+## Commit 20 Product Decision: Make the System Visually Evaluatable
+
+Commit 20 adds diagrams and screenshots.
+
+This is important because the portfolio goal is not only to build a working system, but to make product thinking easy to inspect.
+
+The diagrams explain:
+
+- system architecture
+- execution lifecycle
+- provider adapter boundary
+- dependency mode behavior
+- reliability control model
+
+The screenshots show:
+
+- operational queue
+- AI-assisted review
+- policy and approval controls
+- Stripe payment setup
+- execution request and idempotency
+- provider execution attempt
+- reconciliation
+- manual recovery
+- audit trail
+- operations dashboard
+
+The key product boundary is:
+
+> A portfolio project should be technically credible and quickly understandable.
+

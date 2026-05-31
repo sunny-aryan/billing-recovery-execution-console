@@ -561,3 +561,27 @@ This commit makes the system easier to understand before final portfolio packagi
 ### Product Principle Reinforced
 
 Operational systems need clear next-action guidance, not just correct backend state.
+
+## Commit 20: Diagrams and screenshots before final documentation polish
+
+### Decision
+
+The project adds architecture diagrams, lifecycle diagrams, and screenshots before the final documentation rewrite.
+
+### Why
+
+The project now includes many workflow layers: AI case brief, deterministic policy, human approval, Stripe test payment setup, execution request, provider execution, retry, reconciliation, manual recovery, audit trail, and operations dashboard.
+
+Diagrams and screenshots make the system easier to evaluate quickly.
+
+### Alternative Considered
+
+Only describe the architecture in prose.
+
+### Why Rejected
+
+A portfolio reviewer may not read the full codebase or every markdown file. Visual artifacts help communicate system structure, workflow progression, and product judgment faster.
+
+### Product Principle Reinforced
+
+Strong systems should be explainable visually, not only through code.

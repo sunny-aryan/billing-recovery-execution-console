@@ -23,6 +23,191 @@ This project focuses on the next progression:
 
 The goal is to model what happens when an approved operational decision must become a safe, durable, auditable action against an external system.
 
+
+## System Architecture
+
+```mermaid
+flowchart TD
+    UI[Streamlit UI]
+
+    UI --> CaseUI[Case Detail / Work Queue]
+    UI --> OpsDashboard[Ops Dashboard]
+    UI --> DependencyControls[Dependency Controls]
+
+    CaseUI --> AIService[AI Case Brief Service]
+    CaseUI --> PolicyService[Policy Service]
+    CaseUI --> ApprovalService[Approval Service]
+    CaseUI --> StripeSetup[Stripe Test Payment Service]
+    CaseUI --> ExecutionService[Execution Service]
+    CaseUI --> ReconciliationService[Reconciliation Service]
+    CaseUI --> RecoveryService[Manual Recovery Service]
+    CaseUI --> AuditService[Audit Service]
+
+    AIService --> OpenAI[OpenAI API]
+    AIService --> AIFallback[Deterministic AI Fallback]
+
+    ExecutionService --> ProviderBoundary[Provider Adapter Boundary]
+    StripeSetup --> StripeAdapter[Stripe Adapter]
+    ProviderBoundary --> MockProvider[Mock Billing Provider]
+    ProviderBoundary --> StripeAdapter
+    StripeAdapter --> StripeAPI[Stripe Test Mode API]
+
+    ReconciliationService --> MockProvider
+    ReconciliationService --> StripeAdapter
+
+    CaseUI --> SQLite[(SQLite)]
+    AIService --> SQLite
+    PolicyService --> SQLite
+    ApprovalService --> SQLite
+    StripeSetup --> SQLite
+    ExecutionService --> SQLite
+    ReconciliationService --> SQLite
+    RecoveryService --> SQLite
+    AuditService --> SQLite
+    OpsDashboard --> SQLite
+```
+
+## Execution Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> CaseReview
+    CaseReview --> PolicyEvaluated: evaluate policy
+    PolicyEvaluated --> Approved: human approval
+    PolicyEvaluated --> Rejected: rejection
+    PolicyEvaluated --> Blocked: policy blocked
+
+    Approved --> StripePaymentPrepared: create Stripe test payment
+    StripePaymentPrepared --> ExecutionPending: create execution request
+
+    ExecutionPending --> Processing: execute provider write
+    Processing --> Succeeded: provider success
+    Processing --> FailedTransient: transient failure
+    Processing --> FailedPermanent: permanent failure
+    Processing --> NeedsManualReview: timeout / unknown state
+
+    FailedTransient --> Retrying: retry allowed
+    Retrying --> Succeeded: retry succeeds
+    Retrying --> FailedTransient: retry transient failure
+    Retrying --> FailedPermanent: retry permanent failure
+    Retrying --> NeedsManualReview: retry limit / unknown
+
+    Succeeded --> Reconciled: provider state verified
+    FailedPermanent --> NeedsManualReview: unsafe / mismatch
+    NeedsManualReview --> ManuallyResolved: operator resolves
+    NeedsManualReview --> Cancelled: operator cancels
+    NeedsManualReview --> UnderReview: reopen investigation
+
+    Reconciled --> [*]
+    ManuallyResolved --> [*]
+    Cancelled --> [*]
+```
+
+## Provider Adapter Strategy
+
+```mermaid
+flowchart LR
+    Approval[Human Approval] --> ExecReq[Durable Execution Request]
+    ExecReq --> Idempotency[Idempotency Key]
+    Idempotency --> ProviderChoice{Provider}
+
+    ProviderChoice --> Mock[Mock Provider]
+    ProviderChoice --> Stripe[Stripe Test Mode]
+
+    Mock --> MockResult[Controlled success / failure / timeout]
+    Stripe --> StripeRefund[Create Stripe Refund]
+
+    StripeRefund --> RefundID[Store Refund ID re_...]
+    MockResult --> ProviderObject[Store Provider Object ID]
+    RefundID --> ProviderObject
+
+    ProviderObject --> AttemptHistory[Execution Attempt History]
+    AttemptHistory --> Reconciliation[Reconciliation]
+    Reconciliation --> Verified[Reconciled]
+    Reconciliation --> ManualReview[Needs Manual Review]
+```
+
+## Example Workflow Walkthrough
+
+### Happy Path: Stripe Refund Execution and Reconciliation
+
+1. Operator selects a billing case from the work queue.
+2. Optional AI case brief summarizes the issue, customer impact, missing evidence, and risk notes.
+3. Deterministic policy evaluation determines whether the correction can proceed.
+4. Human reviewer approves the correction and records rationale.
+5. Stripe test payment setup prepares a refundable test payment.
+6. Execution request creates a durable internal command with an idempotency key.
+7. Provider execution creates a Stripe test-mode refund or uses forced mock mode.
+8. Execution attempt records provider response, refund ID, and error details if any.
+9. Reconciliation verifies the provider refund state.
+10. Audit trail records the end-to-end lifecycle.
+
+### Failure / Recovery Path: Timeout or Unknown Provider State
+
+1. Provider execution returns a timeout or unknown state.
+2. The execution request moves to `needs_manual_review`.
+3. Reconciliation checks provider source of truth.
+4. If the provider state remains unknown or mismatched, the case is routed to manual recovery.
+5. Operator records the recovery action, rationale, and optional provider reference.
+6. Audit trail preserves the recovery decision.
+
+## Screenshots
+
+### Work Queue
+
+![Work Queue](docs/screenshots/01-work-queue.png)
+
+### Case Detail and Workflow Summary
+
+![Case Detail Workflow Summary](docs/screenshots/02-case-detail-workflow-summary.png)
+
+### AI Case Brief
+
+![AI Case Brief](docs/screenshots/03a-ai-case-brief.png)
+![AI Case Brief](docs/screenshots/03b-ai-case-brief.png)
+![AI Case Brief](docs/screenshots/03c-ai-case-brief.png)
+
+### Policy Evaluation and Human Approval
+
+![Policy and Approval](docs/screenshots/04a-policy-and-approval.png)
+![Policy and Approval](docs/screenshots/04b-policy-and-approval.png)
+![Policy and Approval](docs/screenshots/04c-policy-and-approval.png)
+
+### Stripe Test Payment Setup
+
+![Stripe Test Payment Setup](docs/screenshots/05a-stripe-test-payment.png)
+![Stripe Test Payment Setup](docs/screenshots/05b-stripe-test-payment.png)
+
+### Execution Request and Idempotency Key
+
+![Execution Request](docs/screenshots/06a-execution-request-idempotency.png)
+![Execution Request](docs/screenshots/06b-execution-request-idempotency.png)
+
+### Stripe Refund Execution Attempt
+
+![Stripe Refund Execution Attempt](docs/screenshots/07a-stripe-refund-execution-attempt.png)
+![Stripe Refund Execution Attempt](docs/screenshots/07b-stripe-refund-execution-attempt.png)
+
+### Reconciliation
+
+![Reconciliation](docs/screenshots/08a-reconciliation.png)
+![Reconciliation](docs/screenshots/08b-reconciliation.png)
+
+### Manual Recovery
+
+![Manual Recovery](docs/screenshots/09-manual-recovery.png)
+
+### Audit Trail
+
+![Audit Trail](docs/screenshots/10a-audit-trail.png)
+![Audit Trail](docs/screenshots/10b-audit-trail.png)
+
+### Operations Dashboard
+
+![Operations Dashboard](docs/screenshots/11a-ops-dashboard.png)
+![Operations Dashboard](docs/screenshots/11b-ops-dashboard.png)
+![Operations Dashboard](docs/screenshots/11c-ops-dashboard.png)
+
 ## Current Implementation
 
 The current implementation supports:
@@ -108,6 +293,7 @@ The current implementation supports:
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
 
+
 ## Target Users
 
 | User               | Responsibility                                                            |
@@ -141,6 +327,33 @@ Streamlit UI
 
 ## External Dependency Modes
 
+```mermaid
+flowchart TD
+    DependencyControls[Sidebar Dependency Controls]
+
+    DependencyControls --> OpenAIMode{OpenAI Mode}
+    DependencyControls --> StripeMode{Stripe Mode}
+
+    OpenAIMode --> OpenAILive[Live OpenAI API]
+    OpenAIMode --> OpenAIMock[Forced Mock AI Brief]
+    OpenAILive --> OpenAISuccess[Live Success]
+    OpenAILive --> OpenAIFallback[Deterministic Fallback]
+
+    StripeMode --> StripeLive[Live Stripe Test Mode]
+    StripeMode --> StripeMock[Forced Mock Provider]
+    StripeLive --> StripeSuccess[Live Stripe Success]
+    StripeLive --> StripeFallback[Safe Failure / Fallback]
+    StripeMock --> MockExecution[Deterministic Demo Path]
+
+    OpenAISuccess --> CaseBrief[AI Case Brief]
+    OpenAIMock --> CaseBrief
+    OpenAIFallback --> CaseBrief
+
+    StripeSuccess --> ExecutionAttempt[Execution Attempt]
+    StripeFallback --> ExecutionAttempt
+    MockExecution --> ExecutionAttempt
+```
+
 The app includes dependency mode controls for upcoming OpenAI and Stripe integrations.
 
 Each dependency can be configured independently:
@@ -154,6 +367,33 @@ This distinction matters because user-selected mock behavior is different from r
 
 - **Forced mock** is a deliberate demo choice.
 - **Fallback** is used when a live dependency call fails and the system must degrade safely.
+
+## Reliability Control Model
+
+```mermaid
+flowchart TD
+    AI[AI Case Brief] --> Policy[Deterministic Policy Evaluation]
+    Policy --> Human[Human Approval]
+    Human --> ExecReq[Durable Execution Request]
+    ExecReq --> ProviderWrite[Provider Execution Write]
+    ProviderWrite --> Attempts[Execution Attempt History]
+    Attempts --> Retry[Retry Policy]
+    Attempts --> Reconcile[Reconciliation]
+    Reconcile --> Recovery[Manual Recovery]
+    Recovery --> Audit[Audit Trail]
+    Reconcile --> Audit
+    Retry --> Audit
+    ProviderWrite --> Audit
+    Human --> Audit
+    Policy --> Audit
+
+    AI -. advisory only .-> Human
+    Policy -. governs eligibility .-> Human
+    ExecReq -. idempotency boundary .-> ProviderWrite
+    Reconcile -. verifies source of truth .-> Recovery
+```
+
+AI assists. Deterministic systems govern. Humans approve. Execution is auditable.
 
 ## AI Case Brief
 
