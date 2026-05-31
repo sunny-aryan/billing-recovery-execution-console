@@ -24,6 +24,14 @@ from src.dependencies.dependency_modes import (
     RUNTIME_RESULT_LIVE_SUCCESS,
     STRIPE_DEPENDENCY,
 )
+from src.execution.execution_rules import (
+    ERROR_PERMANENT,
+    ERROR_TRANSIENT,
+    ERROR_UNKNOWN,
+    PROVIDER_FAILED,
+    PROVIDER_SUCCEEDED,
+    PROVIDER_TIMEOUT,
+)
 from src.providers.base import ProviderAdapter, ProviderRuntimeContext
 
 
@@ -267,3 +275,154 @@ def build_fallback_test_payment(case):
         "payment_status": "fallback_created",
         "raw_status": "fallback_created",
     }
+
+def execute_test_mode_refund(execution_request, stripe_test_payment):
+    """
+    Execute a real Stripe test-mode refund.
+
+    Args:
+        execution_request (dict): Durable execution request.
+        stripe_test_payment (dict): Stored Stripe test payment metadata.
+
+    Returns:
+        dict: Provider-like response payload.
+    """
+    configure_stripe_client()
+
+    refund = stripe.Refund.create(
+        payment_intent=stripe_test_payment["payment_intent_id"],
+        amount=int(execution_request["approved_amount_cents"]),
+        metadata={
+            "case_id": execution_request["case_id"],
+            "execution_request_id": execution_request["execution_request_id"],
+            "approval_id": execution_request["approval_id"],
+            "source": "billing_recovery_execution_console",
+        },
+        idempotency_key=execution_request["idempotency_key"],
+    )
+
+    return {
+        "provider_status": PROVIDER_SUCCEEDED,
+        "provider_object_id": refund.id,
+        "error_type": None,
+        "error_code": None,
+        "error_message": None,
+        "response_payload": {
+            "id": refund.id,
+            "status": refund.status,
+            "payment_intent": stripe_test_payment["payment_intent_id"],
+            "charge": getattr(refund, "charge", None),
+            "amount_cents": refund.amount,
+            "currency": refund.currency.upper(),
+            "idempotency_key": execution_request["idempotency_key"],
+        },
+    }
+
+
+def build_mock_refund_response(execution_request):
+    """
+    Build deterministic mock refund response without calling Stripe.
+
+    Args:
+        execution_request (dict): Durable execution request.
+
+    Returns:
+        dict: Provider-like response payload.
+    """
+    provider_object_id = f"re_mock_{execution_request['execution_request_id'].lower()}"
+
+    return {
+        "provider_status": PROVIDER_SUCCEEDED,
+        "provider_object_id": provider_object_id,
+        "error_type": None,
+        "error_code": None,
+        "error_message": None,
+        "response_payload": {
+            "id": provider_object_id,
+            "status": "succeeded",
+            "payment_intent": "mock_payment_intent",
+            "amount_cents": execution_request["approved_amount_cents"],
+            "currency": execution_request["currency"],
+            "idempotency_key": execution_request["idempotency_key"],
+        },
+    }
+
+
+def build_stripe_refund_fallback_response(execution_request, error):
+    """
+    Build safe fallback response when Stripe refund execution fails.
+
+    Args:
+        execution_request (dict): Durable execution request.
+        error (Exception): Stripe or runtime error.
+
+    Returns:
+        dict: Provider-like response payload.
+    """
+    error_message = str(error)
+    error_code = _extract_stripe_error_code(error)
+    error_type = _classify_stripe_error(error)
+
+    if error_type == ERROR_TRANSIENT:
+        provider_status = PROVIDER_FAILED
+    elif error_type == ERROR_PERMANENT:
+        provider_status = PROVIDER_FAILED
+    else:
+        provider_status = PROVIDER_TIMEOUT
+
+    return {
+        "provider_status": provider_status,
+        "provider_object_id": None,
+        "error_type": error_type,
+        "error_code": error_code,
+        "error_message": error_message,
+        "response_payload": {
+            "status": "failed_or_unknown",
+            "reason": error_code,
+            "message": error_message,
+            "retryable": error_type == ERROR_TRANSIENT,
+            "idempotency_key": execution_request["idempotency_key"],
+        },
+    }
+
+
+def _classify_stripe_error(error):
+    """
+    Classify Stripe errors into internal error categories.
+    """
+    if isinstance(error, stripe.error.RateLimitError):
+        return ERROR_TRANSIENT
+
+    if isinstance(error, stripe.error.APIConnectionError):
+        return ERROR_TRANSIENT
+
+    if isinstance(error, stripe.error.APIError):
+        return ERROR_TRANSIENT
+
+    if isinstance(error, stripe.error.InvalidRequestError):
+        return ERROR_PERMANENT
+
+    if isinstance(error, stripe.error.AuthenticationError):
+        return ERROR_PERMANENT
+
+    if isinstance(error, stripe.error.PermissionError):
+        return ERROR_PERMANENT
+
+    return ERROR_UNKNOWN
+
+
+def _extract_stripe_error_code(error):
+    """
+    Extract a useful error code from Stripe errors.
+    """
+    code = getattr(error, "code", None)
+
+    if code:
+        return code
+
+    http_status = getattr(error, "http_status", None)
+
+    if http_status:
+        return f"stripe_http_{http_status}"
+
+    return error.__class__.__name__

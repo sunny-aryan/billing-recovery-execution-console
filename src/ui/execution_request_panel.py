@@ -1,6 +1,8 @@
 import streamlit as st
 
 from src.approvals.approval_rules import APPROVED
+from src.dependencies.dependency_modes import get_mode_label
+from src.dependencies.dependency_state import get_stripe_mode
 from src.approvals.approval_service import get_latest_approval
 from src.cases.case_service import format_amount
 from src.execution.execution_rules import (
@@ -10,6 +12,7 @@ from src.execution.execution_rules import (
 from src.execution.execution_service import (
     create_execution_request,
     execute_with_mock_provider,
+    execute_with_stripe_provider,
     get_execution_attempts,
     get_latest_execution_request,
     get_retry_eligibility,
@@ -128,7 +131,7 @@ def _render_execution_request(execution_request):
 
 def _render_provider_execution_controls(execution_request):
     """
-    Render first-attempt mock provider execution controls.
+    Render first-attempt provider execution controls.
 
     Args:
         execution_request (dict): Execution request record.
@@ -141,27 +144,61 @@ def _render_provider_execution_controls(execution_request):
         )
         return
 
-    st.caption(
-        "Select a mock provider outcome to simulate the first external billing provider response."
+    provider_choice = st.radio(
+        "Execution provider",
+        options=["mock_billing_provider", "stripe_test_mode"],
+        key=f"provider_choice_{execution_request['execution_request_id']}",
     )
 
-    simulated_outcome = st.selectbox(
-        "Mock provider outcome",
-        options=MOCK_PROVIDER_OUTCOMES,
-        key=f"mock_outcome_{execution_request['execution_request_id']}",
+    if provider_choice == "mock_billing_provider":
+        st.caption(
+            "Use the mock provider to simulate success, transient failure, permanent failure, or timeout."
+        )
+
+        simulated_outcome = st.selectbox(
+            "Mock provider outcome",
+            options=MOCK_PROVIDER_OUTCOMES,
+            key=f"mock_outcome_{execution_request['execution_request_id']}",
+        )
+
+        if st.button(
+            "Execute with mock provider",
+            key=f"execute_mock_provider_{execution_request['execution_request_id']}",
+        ):
+            try:
+                execute_with_mock_provider(
+                    execution_request_id=execution_request["execution_request_id"],
+                    simulated_outcome=simulated_outcome,
+                )
+
+                st.success("Mock provider execution attempt completed.")
+                st.rerun()
+
+            except ValueError as error:
+                st.error(str(error))
+
+        return
+
+    stripe_mode = get_stripe_mode()
+
+    st.caption(
+        "Use Stripe test mode to execute a refund against the prepared test payment. "
+        "Forced mock mode will simulate a Stripe refund without calling Stripe."
     )
+
+    st.info(f"Current Stripe mode: {get_mode_label(stripe_mode)}")
 
     if st.button(
-        "Execute with mock provider",
-        key=f"execute_mock_provider_{execution_request['execution_request_id']}",
+        "Execute Stripe test refund",
+        key=f"execute_stripe_refund_{execution_request['execution_request_id']}",
     ):
         try:
-            execute_with_mock_provider(
+            execute_with_stripe_provider(
                 execution_request_id=execution_request["execution_request_id"],
-                simulated_outcome=simulated_outcome,
+                dependency_mode=stripe_mode,
             )
 
-            st.success("Provider execution attempt completed.")
+            st.success("Stripe refund execution attempt completed.")
             st.rerun()
 
         except ValueError as error:

@@ -21,6 +21,16 @@ from src.audit.audit_service import record_audit_event
 from src.approvals.approval_service import get_latest_approval
 from src.cases.case_service import update_case_status
 from src.database import get_connection
+from src.dependencies.dependency_modes import (
+    DEPENDENCY_MODE_FORCED_MOCK,
+    DEPENDENCY_MODE_LIVE,
+)
+from src.providers.stripe_adapter import (
+    build_mock_refund_response,
+    build_stripe_refund_fallback_response,
+    execute_test_mode_refund,
+)
+from src.providers.stripe_test_payment_service import get_latest_stripe_test_payment
 from src.execution.execution_rules import (
     CASE_STATUS_EXECUTION_PENDING,
     CASE_STATUS_FAILED,
@@ -151,6 +161,42 @@ def create_execution_request(case):
 
     return created_request, True
 
+def execute_with_stripe_provider(execution_request_id, dependency_mode):
+    """
+    Execute a pending execution request through Stripe test mode or forced mock.
+
+    Args:
+        execution_request_id (str): Execution request identifier.
+        dependency_mode (str): live or forced_mock.
+
+    Returns:
+        dict: Updated execution request.
+
+    Raises:
+        ValueError: If execution request is missing, not executable, or missing test payment.
+    """
+    execution_request = get_execution_request_by_id(execution_request_id)
+
+    if execution_request is None:
+        raise ValueError("Execution request not found.")
+
+    if execution_request["status"] != EXECUTION_PENDING:
+        raise ValueError(
+            f"Execution request is not executable from status {execution_request['status']}."
+        )
+
+    stripe_test_payment = get_latest_stripe_test_payment(execution_request["case_id"])
+
+    if stripe_test_payment is None:
+        raise ValueError(
+            "Stripe test payment must be created before Stripe refund execution."
+        )
+
+    return _run_stripe_refund_attempt(
+        execution_request=execution_request,
+        stripe_test_payment=stripe_test_payment,
+        dependency_mode=dependency_mode,
+    )
 
 def execute_with_mock_provider(execution_request_id, simulated_outcome):
     """
@@ -568,6 +614,110 @@ def get_retry_eligibility(execution_request_id):
 
     return evaluate_retry_eligibility(execution_request, attempt_count)
 
+
+def _run_stripe_refund_attempt(
+    execution_request,
+    stripe_test_payment,
+    dependency_mode,
+):
+    """
+    Run one Stripe refund attempt and update execution state.
+
+    Args:
+        execution_request (dict): Execution request record.
+        stripe_test_payment (dict): Stored Stripe test payment metadata.
+        dependency_mode (str): live or forced_mock.
+
+    Returns:
+        dict: Updated execution request.
+    """
+    execution_request_id = execution_request["execution_request_id"]
+
+    _update_execution_request_status(
+        execution_request_id=execution_request_id,
+        status=PROCESSING,
+    )
+    update_case_status(execution_request["case_id"], CASE_STATUS_PROCESSING)
+
+    execution_request = get_execution_request_by_id(execution_request_id)
+    attempt_number = get_execution_attempt_count(execution_request_id) + 1
+    attempt_id = f"ATT-{uuid.uuid4().hex[:8].upper()}"
+
+    request_payload = {
+        "execution_request_id": execution_request["execution_request_id"],
+        "operation_type": execution_request["operation_type"],
+        "amount_cents": execution_request["approved_amount_cents"],
+        "currency": execution_request["currency"],
+        "idempotency_key": execution_request["idempotency_key"],
+        "provider": "stripe_test_mode",
+        "dependency_mode": dependency_mode,
+        "payment_intent_id": stripe_test_payment["payment_intent_id"],
+        "charge_id": stripe_test_payment["charge_id"],
+        "attempt_number": attempt_number,
+    }
+
+    if dependency_mode == DEPENDENCY_MODE_FORCED_MOCK:
+        provider_response = build_mock_refund_response(execution_request)
+
+    elif dependency_mode == DEPENDENCY_MODE_LIVE:
+        try:
+            provider_response = execute_test_mode_refund(
+                execution_request=execution_request,
+                stripe_test_payment=stripe_test_payment,
+            )
+        except Exception as error:
+            provider_response = build_stripe_refund_fallback_response(
+                execution_request=execution_request,
+                error=error,
+            )
+
+    else:
+        provider_response = build_stripe_refund_fallback_response(
+            execution_request=execution_request,
+            error=ValueError(f"Unsupported Stripe dependency mode: {dependency_mode}"),
+        )
+
+    final_status = _map_provider_response_to_execution_status(provider_response)
+    final_case_status = _map_execution_status_to_case_status(final_status)
+
+    _store_execution_attempt(
+        attempt_id=attempt_id,
+        execution_request_id=execution_request_id,
+        attempt_number=attempt_number,
+        provider="stripe_test_mode",
+        request_payload=request_payload,
+        provider_response=provider_response,
+    )
+
+    record_audit_event(
+        case_id=execution_request["case_id"],
+        entity_type="execution_attempt",
+        entity_id=attempt_id,
+        event_type="stripe_refund_attempt_recorded",
+        actor_type="provider",
+        actor_name="stripe_test_mode",
+        details={
+            "execution_request_id": execution_request_id,
+            "attempt_number": attempt_number,
+            "dependency_mode": dependency_mode,
+            "provider_status": provider_response["provider_status"],
+            "provider_object_id": provider_response["provider_object_id"],
+            "error_type": provider_response["error_type"],
+            "error_code": provider_response["error_code"],
+            "final_execution_status": final_status,
+            "idempotency_key": execution_request["idempotency_key"],
+        },
+    )
+
+    _update_execution_request_status(
+        execution_request_id=execution_request_id,
+        status=final_status,
+        provider_object_id=provider_response["provider_object_id"],
+    )
+
+    update_case_status(execution_request["case_id"], final_case_status)
+
+    return get_execution_request_by_id(execution_request_id)
 
 def _run_provider_attempt(
     execution_request,

@@ -501,3 +501,24 @@ The key product boundary is:
 
 > Preparing a refundable provider object is not the same as executing the refund.
 
+
+## Commit 17 Product Decision: Real Refund Execution After Durable Request
+
+Commit 17 adds Stripe test-mode refund execution.
+
+This is the first real external provider write in the project.
+
+The refund is executed only after:
+
+- deterministic policy evaluation
+- human approval
+- Stripe test payment setup
+- durable execution request creation
+- idempotency key generation
+
+This protects the execution boundary and keeps provider writes auditable.
+
+The key product boundary is:
+
+> Stripe performs the external refund, but the internal execution service governs when and how the refund is attempted.
+

@@ -88,6 +88,12 @@ The current implementation supports:
 - forced mock Stripe test payment metadata
 - fallback test payment metadata when Stripe setup fails
 - duplicate test payment prevention per case
+- Stripe test-mode refund execution
+- forced mock Stripe refund execution
+- Stripe refund fallback handling
+- Stripe refund ID persistence
+- Stripe refund execution attempts
+- Stripe refund audit events
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -193,6 +199,20 @@ Depending on the selected Stripe dependency mode:
 This setup step does not issue a refund. It only prepares the external payment object that a later refund execution can reference.
 
 Stripe test payment setup prepares the external test object. The execution request represents the system’s durable command after human approval. Provider execution is the actual Stripe refund write performed against that command. Separating these steps makes the workflow retryable, auditable, and easier to reconcile.
+
+## Stripe Refund Execution
+
+The app can execute a Stripe test-mode refund from an approved execution request.
+
+The refund path supports:
+
+- **Live Stripe test mode** — creates a real Stripe refund using the configured `STRIPE_SECRET_KEY`
+- **Forced mock mode** — simulates a Stripe refund without making an external API call
+- **Fallback behavior** — safely classifies Stripe execution failures without crashing the workflow
+
+The execution request idempotency key is passed to Stripe when creating the refund, so retries are protected against duplicate external effects.
+
+The Stripe refund ID is stored as the execution request provider object ID.
 
 ## AI and Deterministic System Boundary
 

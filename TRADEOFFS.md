@@ -483,3 +483,29 @@ Keeping them separate makes the execution lifecycle clearer.
 ### Product Principle Reinforced
 
 External execution should be decomposed into durable, inspectable steps.
+
+## Commit 17: Stripe refund execution behind execution request boundary
+
+### Decision
+
+The project adds Stripe test-mode refund execution only after policy evaluation, human approval, Stripe test payment setup, and durable execution request creation.
+
+### Why
+
+A real external refund write should not happen directly from an approval action.
+
+It should happen through a durable execution request that contains the approved amount, operation type, provider target, and idempotency key.
+
+### Alternative Considered
+
+Call Stripe refund immediately after approval.
+
+### Why Rejected
+
+That would collapse approval and execution into one step and would weaken retry, audit, and reconciliation behavior.
+
+### Product Principle Reinforced
+
+Human approval authorizes the correction.  
+The execution request makes it durable.  
+The provider adapter performs the external write.
