@@ -63,6 +63,13 @@ The current implementation supports:
 - audit events for policy evaluation, approval, execution request creation, provider attempts, reconciliation, and manual recovery
 - chronological case-level audit history
 - structured JSON audit event details
+- execution operations dashboard
+- execution status summary
+- retry and attempt metrics
+- reconciliation summary metrics
+- manual recovery summary metrics
+- needs-attention queue
+- unreconciled execution queue
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -110,6 +117,20 @@ This project will maintain a clear boundary between AI assistance and determinis
 The product principle is:
 
 > AI prepares context. Humans approve. Deterministic systems execute. Reconciliation proves completion.
+
+## Operations Dashboard
+
+The app includes an execution operations dashboard that summarizes system health across cases.
+
+It helps operators answer:
+
+- Which executions need attention?
+- Which executions are unreconciled?
+- How many provider attempts succeeded or failed?
+- How often manual recovery is needed?
+- Where execution reliability is breaking down?
+
+This dashboard turns the project from a case-by-case workflow into a small operational control console.
 
 ## Current Seed Case Examples
 

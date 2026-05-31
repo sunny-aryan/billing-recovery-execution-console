@@ -294,6 +294,37 @@ The key product boundary is:
 
 > Workflow tables store current and historical state. Audit events explain the lifecycle across systems and actors.
 
+## Commit 11 Product Decision: Operational Visibility After Auditability
+
+Commit 11 adds an execution operations dashboard.
+
+This is important because the product should not only support individual case workflows. Operators also need a cross-case view of execution health and recovery burden.
+
+The dashboard summarizes:
+
+- execution status distribution
+- case status distribution
+- provider attempt outcomes
+- reconciliation runs
+- mismatch or unknown-state count
+- manual recovery actions
+- executions needing attention
+- unreconciled executions
+
+## Commit 11 Workflow Progression
+
+The product now supports both:
+
+case-level workflow:  
+billing case → policy → approval → execution → retry → reconciliation → manual recovery → audit
+
+and portfolio-level operations:  
+execution health → needs-attention queue → unreconciled queue → recovery workload
+
+The key product boundary is:
+
+> Case workflows help individual operators act. Operations dashboards help teams manage execution reliability at scale.
+
 ## Why Billing Recovery?
 
 Billing corrections are a strong domain for this project because they involve:

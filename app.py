@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.database import initialize_database
+from src.ui.ops_dashboard import render_ops_dashboard
 from src.seed import seed_database
 from src.cases.case_service import get_all_cases, get_case_by_id
 from src.ui.queue_view import render_queue_view
@@ -109,7 +110,7 @@ def main():
 
         page = st.radio(
             "Go to",
-            options=["Work Queue", "Case Detail", "About"],
+            options=["Work Queue", "Case Detail", "Ops Dashboard", "About"],
         )
 
         st.divider()
@@ -138,6 +139,9 @@ def main():
 
         case = get_case_by_id(selected_case_id) if selected_case_id else None
         render_case_detail(case)
+    
+    elif page == "Ops Dashboard":
+        render_ops_dashboard()
 
     elif page == "About":
         render_about_page()

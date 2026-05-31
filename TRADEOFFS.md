@@ -300,3 +300,35 @@ A reliable execution system needs both domain tables and a cross-cutting audit l
 ### Product Principle Reinforced
 
 Money-impacting workflows must be explainable after the fact.
+
+## Commit 11: Add operations dashboard before real provider integration
+
+### Decision
+
+The project adds an execution operations dashboard before integrating a real external billing provider.
+
+### Why
+
+The current project already models the core execution lifecycle with a realistic mock provider. Before adding provider-specific complexity, the system should expose operational health across cases.
+
+The dashboard helps users answer:
+
+- what needs attention
+- what is unreconciled
+- how often execution attempts fail
+- how often reconciliation finds mismatches
+- how often manual recovery is needed
+
+### Alternative Considered
+
+Move directly to Stripe test-mode integration.
+
+### Why Rejected for Now
+
+A real provider integration would improve external realism, but it would not automatically improve operational visibility.
+
+For a Senior/Principal PM portfolio signal, it is important to show that execution reliability is not only about making API calls. It is also about monitoring outcomes, prioritizing recovery work, and understanding reliability trends.
+
+### Product Principle Reinforced
+
+Reliable execution requires both workflow controls and operational visibility.
