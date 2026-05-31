@@ -86,6 +86,10 @@ def _render_test_payment(payment):
     st.write("**Source**")
     st.write(payment["source"])
 
+    st.caption(
+        "This payment object prepares the Stripe refund path. It does not execute a refund by itself."
+    )
+
     if payment["error_message"]:
         with st.expander("Fallback / setup error details", expanded=False):
             st.code(payment["error_message"])

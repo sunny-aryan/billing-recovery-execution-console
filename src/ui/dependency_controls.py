@@ -65,29 +65,39 @@ def render_dependency_status_summary():
     with col_1:
         st.metric("OpenAI mode", get_mode_label(openai_mode))
 
+        if openai_mode == DEPENDENCY_MODE_FORCED_MOCK:
+            st.caption("OpenAI calls are disabled for demo safety.")
+        else:
+            st.caption("OpenAI live calls are enabled when credentials are configured.")
+
     with col_2:
         st.metric("Stripe mode", get_mode_label(stripe_mode))
 
-    st.caption(
-        "These are user-selected modes. Runtime fallbacks are dependency-specific."
-    )
+        if stripe_mode == DEPENDENCY_MODE_FORCED_MOCK:
+            st.caption("Stripe API calls are disabled for demo safety.")
+        else:
+            st.caption("Stripe test-mode API calls are enabled when configured.")
 
     with st.expander("Stripe provider readiness", expanded=False):
-        st.write("**Runtime result**")
-        st.write(stripe_context.runtime_result)
+        col_a, col_b, col_c = st.columns(3)
 
-        st.write("**Source**")
-        st.write(stripe_context.source)
+        with col_a:
+            st.metric("Runtime result", stripe_context.runtime_result)
 
-        st.write("**Configured**")
-        st.write("Yes" if stripe_context.is_configured else "No")
+        with col_b:
+            st.metric("Source", stripe_context.source)
 
-        st.write("**Message**")
+        with col_c:
+            st.metric("Configured", "Yes" if stripe_context.is_configured else "No")
+
         st.write(stripe_context.message)
 
         if stripe_context.error_message:
-            st.write("**Configuration issue**")
             st.warning(stripe_context.error_message)
+
+    st.caption(
+        "Forced mock is user-selected demo behavior. Fallback is dependency-specific runtime recovery after a live call fails."
+    )
 
 
 def _get_mode_index(mode):

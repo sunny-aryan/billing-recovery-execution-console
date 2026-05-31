@@ -545,3 +545,19 @@ The key product boundary is:
 
 > The provider write creates the external object. Reconciliation verifies that the provider object still matches internal state.
 
+## Commit 19 Product Decision: Make Reliability State Legible
+
+Commit 19 improves workflow UX and dependency visibility.
+
+This is important because a reliable execution system has many states and control points. Operators need to understand:
+
+- where the case is in the lifecycle
+- what action is allowed next
+- whether OpenAI or Stripe are live or mocked
+- whether an external dependency result came from live behavior, forced mock, or fallback
+- which provider object and idempotency key are attached to the execution
+
+The key product boundary is:
+
+> Backend reliability is not enough. Operators need legible workflow state to act safely.
+

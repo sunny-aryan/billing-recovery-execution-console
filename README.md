@@ -99,6 +99,11 @@ The current implementation supports:
 - forced mock Stripe reconciliation
 - safe fallback when Stripe refund lookup fails
 - reconciliation of Stripe refund ID against internal execution state
+- workflow summary on the case detail page
+- clearer dependency mode visibility
+- Stripe/OpenAI live versus forced-mock status display
+- next-action guidance based on execution state
+- clearer UI boundaries for AI, test payment setup, provider execution, reconciliation, and manual recovery
 
 Policy evaluation must happen before approval. Approval must happen before execution request creation. Execution requests will later be used by provider execution, retry, and reconciliation workflows.
 
@@ -257,6 +262,26 @@ It helps operators answer:
 - Where execution reliability is breaking down?
 
 This dashboard turns the project from a case-by-case workflow into a small operational control console.
+
+## Workflow UX and Dependency Visibility
+
+The Case Detail page includes a workflow summary that shows:
+
+- current workflow stage
+- case status
+- execution status
+- Stripe test payment readiness
+- next recommended operator action
+- execution identifiers such as execution request ID, provider, idempotency key, and provider object ID
+
+The UI also makes external dependency behavior visible:
+
+- OpenAI live mode versus forced mock mode
+- Stripe live test mode versus forced mock mode
+- provider readiness
+- runtime fallback indicators when available
+
+This keeps the app demo-friendly while still showing real external integration behavior.
 
 ## Current Seed Case Examples
 

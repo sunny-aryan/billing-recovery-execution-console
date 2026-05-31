@@ -21,8 +21,8 @@ def render_manual_recovery_panel(execution_request):
     st.subheader("Manual Recovery")
 
     st.caption(
-        "Manual recovery is used when automation cannot safely complete the execution lifecycle. "
-        "Operators must record the recovery action and rationale."
+        "Manual recovery is used after failed, unknown, or mismatched execution states. "
+        "Operators must record what they verified and why the recovery action is safe."
     )
 
     if execution_request is None:

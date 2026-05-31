@@ -55,14 +55,16 @@ def _render_case_brief(brief):
     """
     col_1, col_2, col_3 = st.columns(3)
 
+    col_1, col_2, col_3 = st.columns(3)
+
     with col_1:
         st.metric("AI source", brief["source"])
 
     with col_2:
-        st.metric("Dependency mode", brief["dependency_mode"])
+        st.metric("Mode", brief["dependency_mode"])
 
     with col_3:
-        st.metric("Runtime result", brief["runtime_result"])
+        st.metric("Result", brief["runtime_result"])
 
     if brief["runtime_result"] == RUNTIME_RESULT_LIVE_SUCCESS:
         st.success("OpenAI live response used.")
@@ -70,6 +72,10 @@ def _render_case_brief(brief):
         st.info("Forced mock AI brief used. No OpenAI call was made.")
     elif brief["runtime_result"] == RUNTIME_RESULT_FALLBACK_USED:
         st.warning("Fallback AI brief used after live OpenAI path failed or was invalid.")
+
+    st.caption(
+        "AI output is advisory context only. Policy, approval, execution, and reconciliation remain deterministic/human-governed."
+    )    
 
     if brief["error_message"]:
         with st.expander("Fallback error details", expanded=False):

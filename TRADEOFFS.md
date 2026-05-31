@@ -535,3 +535,29 @@ A reliable execution workflow should have a verification step that compares inte
 ### Product Principle Reinforced
 
 External execution is complete only after provider state is verified.
+
+## Commit 19: Polish workflow visibility before screenshots
+
+### Decision
+
+The project improves workflow UX and dependency status visibility before adding final screenshots and documentation polish.
+
+### Why
+
+The system now has many important workflow layers: AI brief, policy, approval, Stripe test payment setup, execution request, provider execution, retry, reconciliation, manual recovery, audit, and dashboard.
+
+Without clearer workflow summary and dependency state visibility, the product could feel technically strong but hard to evaluate quickly.
+
+### Alternative Considered
+
+Move directly to screenshots and final README polish.
+
+### Why Rejected
+
+Screenshots should capture the polished workflow, not the rough version.
+
+This commit makes the system easier to understand before final portfolio packaging.
+
+### Product Principle Reinforced
+
+Operational systems need clear next-action guidance, not just correct backend state.

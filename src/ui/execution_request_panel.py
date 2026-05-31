@@ -182,11 +182,16 @@ def _render_provider_execution_controls(execution_request):
     stripe_mode = get_stripe_mode()
 
     st.caption(
-        "Use Stripe test mode to execute a refund against the prepared test payment. "
-        "Forced mock mode will simulate a Stripe refund without calling Stripe."
+        "Stripe execution creates a refund against the prepared Stripe test payment. "
+        "In forced mock mode, the app simulates a Stripe refund without calling Stripe."
     )
 
     st.info(f"Current Stripe mode: {get_mode_label(stripe_mode)}")
+
+    st.warning(
+        "Provider execution is the external write boundary. Use it only after approval, "
+        "test payment setup, and execution request creation."
+    )
 
     if st.button(
         "Execute Stripe test refund",

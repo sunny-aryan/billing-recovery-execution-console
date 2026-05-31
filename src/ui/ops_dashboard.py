@@ -22,8 +22,8 @@ def render_ops_dashboard():
     st.header("Execution Operations Dashboard")
 
     st.caption(
-        "A portfolio-level view of execution health across mock and Stripe test-mode provider attempts, retries, reconciliation, "
-        "and manual recovery across billing correction cases."
+        "A portfolio-level view of execution health across mock and Stripe test-mode provider attempts, "
+        "including retry, reconciliation, and manual recovery workload."
     )
 
     _render_summary_metrics()

@@ -25,8 +25,8 @@ def render_reconciliation_panel(execution_request):
     st.subheader("Reconciliation")
 
     st.caption(
-        "Reconciliation compares internal execution state with the provider source of truth. "
-        "A billing correction is not truly complete until execution is verified."
+        "Reconciliation compares internal execution state with provider source of truth. "
+        "For Stripe executions, this means looking up the refund status by refund ID."
     )
 
     if execution_request is None:
@@ -40,8 +40,8 @@ def render_reconciliation_panel(execution_request):
         st.info(f"Stripe reconciliation mode: {get_mode_label(stripe_mode)}")
 
         st.caption(
-            "Stripe reconciliation retrieves the Stripe refund status in live mode. "
-            "Forced mock mode uses deterministic Stripe refund lookup without calling Stripe."
+            "Live mode retrieves the Stripe refund by refund ID. Forced mock mode uses "
+            "deterministic Stripe refund lookup without calling Stripe."
         )
 
     else:
